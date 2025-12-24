@@ -1,5 +1,5 @@
-#include "gps_module.h"
 #include <Arduino.h>
+#include "gps_module.h"
 
 //Enable GPS POwer and calling GPS
 #include <Wire.h>
