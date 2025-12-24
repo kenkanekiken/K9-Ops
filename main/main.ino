@@ -2,6 +2,7 @@
 #include "gps_module.h"
 #include "dht_module.h"
 #include "lora_module.h"
+#include "ble_module.h"
 
 void setup() {
   Serial.begin(115200);
@@ -10,6 +11,7 @@ void setup() {
   gpsInit();
   dhtInit();
   loraInit();
+  bleInit();
 }
 
 void loop() {
