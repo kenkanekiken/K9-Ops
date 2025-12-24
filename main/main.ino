@@ -3,6 +3,7 @@
 #include "dht_module.h"
 #include "lora_module.h"
 #include "ble_module.h"
+#include "mpu.h"
 
 void setup() {
   Serial.begin(115200);
@@ -12,6 +13,7 @@ void setup() {
   dhtInit();
   loraInit();
   bleInit();
+  mpuInit();
 }
 
 void loop() {
@@ -19,4 +21,5 @@ void loop() {
   gpsRead();
   dhtRead();
   loraRead();
+  mpuRead();
 }
