@@ -1,7 +1,5 @@
-#ifndef LORA_MODULE_H
-#define LORA_MODULE_H
+#pragma once
+#include <stdint.h>
 
 void loraInit(void);
 void loraRead(void);
-
-#endif

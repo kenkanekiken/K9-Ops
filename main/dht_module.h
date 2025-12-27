@@ -1,7 +1,5 @@
-#ifndef DHT_MODULE_H
-#define DHT_MODULE_H
+#pragma once
+#include <stdint.h>
 
 void dhtInit(void);
 void dhtRead(void);
-
-#endif

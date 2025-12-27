@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include "DHTesp.h"
+#include "buzzer.h"
 
 DHTesp dht;
 
@@ -21,5 +22,10 @@ void dhtRead(void) {
     } else {
       Serial.printf("T=%.1fC  H=%.1f%%\n", data.temperature, data.humidity);
     }
+  }
+  if (data.temperature > 29) {
+    buzzerOn();
+    delay(500);
+    buzzerOff();
   }
 }

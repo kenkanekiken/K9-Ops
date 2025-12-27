@@ -1,6 +1,4 @@
-#ifndef BLE_MODULE_H
-#define BLE_MODULE_H
+#pragma once
+#include <stdint.h>
 
 void bleInit(void);
-
-#endif
