@@ -12,6 +12,8 @@
 #define LORA_RST   23
 #define LORA_DIO0  26   // if no packets later, try 33
 
+extern unsigned long latitude;
+extern unsigned long longtitude;
 
 void loraInit(void) {
   SPI.begin(LORA_SCK, LORA_MISO, LORA_MOSI, LORA_CS);
@@ -33,10 +35,17 @@ void loraRead(void) {
     lastTime = millis();
     Serial.print("Sending packet ");
     Serial.println(counter);
+    Serial.print("Sending Latitude");
+    Serial.println(latitude);
+    Serial.print("Sending Longtitude");
+    Serial.println(longtitude);
+    Serial.print("Sending temp");
 
     LoRa.beginPacket();
     LoRa.print("Hello from TX #");
     LoRa.print(counter++);
+    LoRa.print(latitude);
+    LoRa.print(longtitude);
   }
 }
 

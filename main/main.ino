@@ -4,6 +4,7 @@
 #include "lora_module.h"
 #include "ble_module.h"
 #include "mpu.h"
+#include "buzzer.h"
 
 void setup() {
   Serial.begin(115200);
@@ -14,6 +15,7 @@ void setup() {
   loraInit();
   bleInit();
   mpuInit();
+  buzzerInit();
 }
 
 void loop() {
