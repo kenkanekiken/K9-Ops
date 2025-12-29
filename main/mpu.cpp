@@ -13,8 +13,20 @@
 #define ACCEL_XOUT_H   0x3B
 
 // ================= VARIABLES =================
-int16_t axRaw, ayRaw, azRaw;
+// For dog movement State capture
+#define SAMPLE_RATE 50
+#define WINDOW_SIZE 50
+// For dog step count capture
+#define STEP_THRESHOLD 0.15   // g
+#define MIN_STEP_INTERVAL 200 // ms (max ~5 steps/sec)
 
+float motionBuffer[WINDOW_SIZE];
+int bufferIndex = 0;
+String state;
+unsigned long lastStepTime = 0;
+int stepCount = 0;
+bool aboveThreshold = false;
+int16_t axRaw, ayRaw, azRaw;
 // ================= FUNCTIONS =================
 void mpuWrite(uint8_t reg, uint8_t data) {
   Wire.beginTransmission(MPU_ADDR);
@@ -41,7 +53,7 @@ bool mpuReadAccel(int16_t &ax, int16_t &ay, int16_t &az) {
 // ================= SETUP =================
 void mpuInit(void) {
   Wire.begin(SDA_PIN, SCL_PIN);
-  // Wake up MPU6050
+  // Wake up MPU60500
   mpuWrite(PWR_MGMT_1, 0x00);
   Serial.println("MPU6050 ACCEL ONLY READY");
 }
@@ -57,14 +69,45 @@ void mpuRead(void) {
 
     float magnitude = sqrt(ax * ax + ay * ay + az * az);
 
+    float motion = fabs(magnitude - 1.0); // minus one to account for gravity
+
+    if (motion < 0.05) {
+      state = "stationary";
+    }
+    else if(motion < 0.25) {
+      state = "walking";
+    }
+    else {
+      state = "running";
+    }
+
+    unsigned long now = millis();
+
+    if (motion > STEP_THRESHOLD && !aboveThreshold) {
+
+    if (now - lastStepTime > MIN_STEP_INTERVAL) {
+    stepCount++;
+    lastStepTime = now;
+      }
+    aboveThreshold = true;
+    }
+
+    if (motion < STEP_THRESHOLD * 0.5) {
+      aboveThreshold = false;
+    }
+
+
     Serial.print("AX: "); Serial.print(ax, 3);
     Serial.print("  AY: "); Serial.print(ay, 3);
     Serial.print("  AZ: "); Serial.print(az, 3);
-    Serial.print("  |A|: "); Serial.println(magnitude, 3);
-  } 
+    Serial.print("  |A|: "); Serial.print(magnitude, 3);
+    Serial.print("  Motion: "); Serial.print(motion, 3);
+    Serial.print("  State: "); Serial.print(state);
+    Serial.print("  Step Count: "); Serial.println(stepCount);
+  }
   else {
     Serial.println("MPU6050 READ FAILED");
   }
 
-  delay(1000);
+  delay(20);
 }
