@@ -6,6 +6,10 @@
 #include "mpu.h"
 #include "buzzer.h"
 
+// Pin 25 DHT
+// Pin 14 buzzer
+// Pin 2 LED
+
 void setup() {
   Serial.begin(115200);
   pinMode(2, OUTPUT);
