@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:board/constants.dart';
 
 class DesktopScaffold extends StatefulWidget {
-  const DesktopScaffold({Key? key}) : super (key: key);
+  const DesktopScaffold({super.key});
 
   @override
   State<DesktopScaffold> createState() => _DesktopScaffoldState();
@@ -19,7 +19,7 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
           child: Column(
             children: [
               const DashboardHeader(
-                title: "Teddy's Dashboard",
+                title: "12's Dashboard",
                 subtitle: "Live monitoring & control",
               ),
               const SizedBox(height: 18),

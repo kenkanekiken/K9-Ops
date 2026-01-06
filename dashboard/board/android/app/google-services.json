@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "106851791798",
+    "firebase_url": "https://k9ops-259ff-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "k9ops-259ff",
+    "storage_bucket": "k9ops-259ff.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:106851791798:android:e01e327dde88d9a9d4c717",
+        "android_client_info": {
+          "package_name": "com.example.board"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAHXUwadUrcg2rDc3btfvqShgEKTiBXukA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

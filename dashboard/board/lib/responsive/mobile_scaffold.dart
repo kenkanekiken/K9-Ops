@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:board/constants.dart';
 
 class MobileScaffold extends StatefulWidget {
-  const MobileScaffold({Key? key}) : super (key: key);
+  const MobileScaffold({super.key});
 
   @override
   State<MobileScaffold> createState() => _MobileScaffoldState();
@@ -18,11 +18,11 @@ class _MobileScaffoldState extends State<MobileScaffold> {
           padding: const EdgeInsets.all(14),
           child: Column(
             children: const [
-              const DashboardHeader(
-                title: "Teddy's Dashboard",
+              DashboardHeader(
+                title: "12's Dashboard",
                 subtitle: "Live monitoring & control",
               ),
-              const SizedBox(height: 14),
+              SizedBox(height: 14),
               TopStatsRow(),
               SizedBox(height: 14),
 
