@@ -63,7 +63,7 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
 
               const SizedBox(height: 18),
 
-              // ===== BOTTOM FULL-WIDTH 50/50 =====
+              // ===== BOTTOM =====
               Row(
                 children: const [
                   Expanded(
