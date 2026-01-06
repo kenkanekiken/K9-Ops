@@ -15,24 +15,21 @@ const mutedText = Color(0xFF9FB0C8);
 final Color myDefaultBackground = bg;
 
 /* -------------------- TEXT STYLES -------------------- */
-TextStyle labelStyle() => const TextStyle(
-      color: mutedText,
-      fontSize: 12,
-      height: 1.2,
-    );
+TextStyle labelStyle() =>
+    const TextStyle(color: mutedText, fontSize: 12, height: 1.2);
 
 TextStyle valueStyle() => const TextStyle(
-      color: Colors.white,
-      fontSize: 18,
-      fontWeight: FontWeight.w600,
-      height: 1.1,
-    );
+  color: Colors.white,
+  fontSize: 18,
+  fontWeight: FontWeight.w600,
+  height: 1.1,
+);
 
 TextStyle titleStyle() => const TextStyle(
-      color: Colors.white,
-      fontSize: 14,
-      fontWeight: FontWeight.w600,
-    );
+  color: Colors.white,
+  fontSize: 14,
+  fontWeight: FontWeight.w600,
+);
 
 /* -------------------- DASHBOARD HEADER (LARGE) -------------------- */
 class DashboardHeader extends StatelessWidget {
@@ -58,7 +55,7 @@ class DashboardHeader extends StatelessWidget {
             blurRadius: 20,
             offset: Offset(0, 10),
             color: Color(0x33000000),
-          )
+          ),
         ],
       ),
       child: Row(
@@ -72,11 +69,7 @@ class DashboardHeader extends StatelessWidget {
               borderRadius: BorderRadius.circular(18),
               border: Border.all(color: cardBorder),
             ),
-            child: const Icon(
-              Icons.pets_rounded,
-              color: accentBlue,
-              size: 34,
-            ),
+            child: const Icon(Icons.pets_rounded, color: accentBlue, size: 34),
           ),
           const SizedBox(width: 18),
 
@@ -88,7 +81,7 @@ class DashboardHeader extends StatelessWidget {
                 title,
                 style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 28,          // 👈 BIG
+                  fontSize: 28, // 👈 BIG
                   fontWeight: FontWeight.w800,
                   letterSpacing: 0.4,
                 ),
@@ -114,7 +107,11 @@ class DashboardHeader extends StatelessWidget {
 class GlassCard extends StatelessWidget {
   final Widget child;
   final EdgeInsets padding;
-  const GlassCard({super.key, required this.child, this.padding = const EdgeInsets.all(16)});
+  const GlassCard({
+    super.key,
+    required this.child,
+    this.padding = const EdgeInsets.all(16),
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -129,7 +126,7 @@ class GlassCard extends StatelessWidget {
             blurRadius: 18,
             offset: Offset(0, 8),
             color: Color(0x33000000),
-          )
+          ),
         ],
       ),
       child: child,
@@ -190,8 +187,7 @@ class TemperatureStatPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ref =
-        FirebaseDatabase.instance.ref('devices/teddy/temperature');
+    final ref = FirebaseDatabase.instance.ref('devices/latest/temperature');
 
     return StreamBuilder<DatabaseEvent>(
       stream: ref.onValue,
@@ -220,6 +216,40 @@ class TemperatureStatPill extends StatelessWidget {
   }
 }
 
+class BatteryStatPill extends StatelessWidget {
+  const BatteryStatPill({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final ref = FirebaseDatabase.instance.ref('devices/latest/battery');
+
+    return StreamBuilder<DatabaseEvent>(
+      stream: ref.onValue,
+      builder: (context, snapshot) {
+        String display = "-- %";
+
+        if (snapshot.hasData) {
+          final value = snapshot.data!.snapshot.value;
+          if (value is num) {
+            display = "${value.toStringAsFixed(1)}%";
+          } else if (value != null) {
+            final parsed = double.tryParse(value.toString());
+            if (parsed != null) {
+              display = "${parsed.toStringAsFixed(1)}°C";
+            }
+          }
+        }
+
+        return StatPill(
+          icon: Icons.battery_5_bar_outlined,
+          title: "Battery",
+          value: display,
+        );
+      },
+    );
+  }
+}
+
 class TopStatsRow extends StatelessWidget {
   const TopStatsRow({super.key});
 
@@ -230,11 +260,14 @@ class TopStatsRow extends StatelessWidget {
         final isMobile = c.maxWidth < 700;
 
         final items = const [
-          StatPill(icon: Icons.favorite_border, title: "Heat Risk", value: "Low"),
-          // StatPill(icon: Icons.thermostat_outlined, title: "Temperature", value: "38.5°C"),
-          TemperatureStatPill(), // 🔥 LIVE FROM FIREBASE
+          StatPill(
+            icon: Icons.favorite_border,
+            title: "Heat Risk",
+            value: "Low",
+          ),
+          TemperatureStatPill(),
           StatPill(icon: Icons.show_chart, title: "Activity", value: "active"),
-          StatPill(icon: Icons.battery_5_bar_outlined, title: "Battery", value: "87%"),
+          BatteryStatPill(),
         ];
 
         if (isMobile) {
@@ -269,9 +302,9 @@ class TopStatsRow extends StatelessWidget {
 
 /* -------------------- RADAR PULSE GPS -------------------- */
 class BlueWavePulse extends StatefulWidget {
-  final Widget child;        // icon/avatar 
-  final double minRadius;    // starting radius
-  final double maxRadius;    // ending radius
+  final Widget child; // icon/avatar
+  final double minRadius; // starting radius
+  final double maxRadius; // ending radius
   final Color color;
   final Duration duration;
 
@@ -310,7 +343,8 @@ class _BlueWavePulseState extends State<BlueWavePulse>
       animation: _c,
       builder: (_, __) {
         final t = _c.value; // 0..1
-        final radius = widget.minRadius + (widget.maxRadius - widget.minRadius) * t;
+        final radius =
+            widget.minRadius + (widget.maxRadius - widget.minRadius) * t;
 
         // Starts visible, fades out smoothly
         final opacity = (1.0 - t) * 0.18; // tune 0.18 to match your screenshot
@@ -359,8 +393,14 @@ class GpsCard extends StatelessWidget {
                 children: const [
                   Icon(Icons.circle, size: 8, color: accentGreen),
                   SizedBox(width: 6),
-                  Text("Live",
-                      style: TextStyle(color: accentGreen, fontSize: 12, fontWeight: FontWeight.w600)),
+                  Text(
+                    "Live",
+                    style: TextStyle(
+                      color: accentGreen,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ],
               ),
             ],
@@ -379,17 +419,27 @@ class GpsCard extends StatelessWidget {
               child: Stack(
                 children: [
                   Positioned.fill(
-                    child: Opacity(opacity: 0.22, child: CustomPaint(painter: const GridPainter())),
+                    child: Opacity(
+                      opacity: 0.22,
+                      child: CustomPaint(painter: const GridPainter()),
+                    ),
                   ),
                   const Positioned(
                     left: 12,
                     top: 12,
-                    child: _MiniInfoBox(title: "Coordinates", value: "40.758967,  -73.985005"),
+                    child: _MiniInfoBox(
+                      title: "Coordinates",
+                      value: "40.758967,  -73.985005",
+                    ),
                   ),
                   const Positioned(
                     right: 12,
                     top: 12,
-                    child: _MiniInfoBox(title: "Accuracy", value: "±5m", valueColor: accentGreen),
+                    child: _MiniInfoBox(
+                      title: "Accuracy",
+                      value: "±5m",
+                      valueColor: accentGreen,
+                    ),
                   ),
                   Center(
                     child: BlueWavePulse(
@@ -410,8 +460,13 @@ class GpsCard extends StatelessWidget {
             children: [
               const Icon(Icons.info_outline, color: mutedText, size: 16),
               const SizedBox(width: 8),
-              const Text("Current Conditions",
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+              const Text(
+                "Current Conditions",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
               const SizedBox(width: 12),
               Expanded(
                 child: Row(
@@ -443,7 +498,13 @@ class _TinyKV extends StatelessWidget {
       children: [
         Text(k, style: labelStyle()),
         const SizedBox(height: 2),
-        Text(v, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+        Text(
+          v,
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
       ],
     );
   }
@@ -474,7 +535,10 @@ class _MiniInfoBox extends StatelessWidget {
         children: [
           Text(title, style: labelStyle()),
           const SizedBox(height: 2),
-          Text(value, style: TextStyle(color: valueColor, fontWeight: FontWeight.w700)),
+          Text(
+            value,
+            style: TextStyle(color: valueColor, fontWeight: FontWeight.w700),
+          ),
         ],
       ),
     );
@@ -576,25 +640,43 @@ class _LedControlCardState extends State<LedControlCard> {
 
           Row(
             children: [
-              _ColorDot(color: const Color(0xFF2DB7FF), selected: selectedColor == 0,
-                  onTap: () => setState(() => selectedColor = 0)),
+              _ColorDot(
+                color: const Color(0xFF2DB7FF),
+                selected: selectedColor == 0,
+                onTap: () => setState(() => selectedColor = 0),
+              ),
               const SizedBox(width: 10),
-              _ColorDot(color: const Color(0xFF2FE57A), selected: selectedColor == 1,
-                  onTap: () => setState(() => selectedColor = 1)),
+              _ColorDot(
+                color: const Color(0xFF2FE57A),
+                selected: selectedColor == 1,
+                onTap: () => setState(() => selectedColor = 1),
+              ),
               const SizedBox(width: 10),
-              _ColorDot(color: const Color(0xFFFF2D6C), selected: selectedColor == 2,
-                  onTap: () => setState(() => selectedColor = 2)),
+              _ColorDot(
+                color: const Color(0xFFFF2D6C),
+                selected: selectedColor == 2,
+                onTap: () => setState(() => selectedColor = 2),
+              ),
               const SizedBox(width: 10),
-              _ColorDot(color: const Color(0xFFFFA41B), selected: selectedColor == 3,
-                  onTap: () => setState(() => selectedColor = 3)),
+              _ColorDot(
+                color: const Color(0xFFFFA41B),
+                selected: selectedColor == 3,
+                onTap: () => setState(() => selectedColor = 3),
+              ),
               const SizedBox(width: 10),
-              _ColorDot(color: Colors.white, selected: selectedColor == 4,
-                  onTap: () => setState(() => selectedColor = 4)),
+              _ColorDot(
+                color: Colors.white,
+                selected: selectedColor == 4,
+                onTap: () => setState(() => selectedColor = 4),
+              ),
             ],
           ),
 
           const SizedBox(height: 16),
-          Text("Brightness: ${(brightness * 100).round()}%", style: const TextStyle(color: mutedText)),
+          Text(
+            "Brightness: ${(brightness * 100).round()}%",
+            style: const TextStyle(color: mutedText),
+          ),
           Slider(
             value: brightness,
             onChanged: (v) => setState(() => brightness = v),
@@ -630,14 +712,22 @@ class _ModeButton extends StatelessWidget {
           decoration: BoxDecoration(
             color: selected ? const Color(0xFF1B4DFF) : softBg,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: selected ? const Color(0xFF1B4DFF) : cardBorder),
+            border: Border.all(
+              color: selected ? const Color(0xFF1B4DFF) : cardBorder,
+            ),
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(icon, color: selected ? Colors.white : mutedText, size: 18),
               const SizedBox(height: 4),
-              Text(label, style: TextStyle(color: selected ? Colors.white : mutedText, fontSize: 12)),
+              Text(
+                label,
+                style: TextStyle(
+                  color: selected ? Colors.white : mutedText,
+                  fontSize: 12,
+                ),
+              ),
             ],
           ),
         ),
@@ -651,7 +741,11 @@ class _ColorDot extends StatelessWidget {
   final bool selected;
   final VoidCallback onTap;
 
-  const _ColorDot({required this.color, required this.selected, required this.onTap});
+  const _ColorDot({
+    required this.color,
+    required this.selected,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -705,7 +799,13 @@ class CommsPanel extends StatelessWidget {
             children: const [
               Icon(Icons.volume_up_outlined, color: accentBlue),
               SizedBox(width: 8),
-              Text("Sound Commands", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+              Text(
+                "Sound Commands",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 12),
@@ -779,7 +879,13 @@ class VibrationPanel extends StatelessWidget {
             children: [
               Icon(Icons.vibration, color: Color(0xFFB26BFF)),
               SizedBox(width: 8),
-              Text("Vibration", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+              Text(
+                "Vibration",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ],
           ),
           SizedBox(height: 12),
@@ -850,8 +956,13 @@ class RecentCommandsPanel extends StatelessWidget {
             children: const [
               Icon(Icons.history, color: accentGreen),
               SizedBox(width: 8),
-              Text("Recent Commands",
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+              Text(
+                "Recent Commands",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 12),
@@ -864,8 +975,10 @@ class RecentCommandsPanel extends StatelessWidget {
             ),
             alignment: Alignment.centerLeft,
             padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Text("No commands sent yet",
-                style: labelStyle().copyWith(fontStyle: FontStyle.italic)),
+            child: Text(
+              "No commands sent yet",
+              style: labelStyle().copyWith(fontStyle: FontStyle.italic),
+            ),
           ),
         ],
       ),
@@ -895,8 +1008,8 @@ class _FakeLineChartPainter extends CustomPainter {
       final x = t * size.width;
 
       // center line + wave
-      final y = size.height * 0.55 +
-          math.sin(t * 10 * freq) * size.height * 0.18;
+      final y =
+          size.height * 0.55 + math.sin(t * 10 * freq) * size.height * 0.18;
 
       if (i == 0) {
         path.moveTo(x, y);
@@ -911,6 +1024,7 @@ class _FakeLineChartPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
+
 /* -------------------- MOVEMENT MONITOR (LEFT) -------------------- */
 class MovementMonitorCard extends StatelessWidget {
   const MovementMonitorCard({super.key});
@@ -941,13 +1055,25 @@ class MovementMonitorCard extends StatelessWidget {
           // Mini stats row
           Row(
             children: const [
-              Expanded(child: _MiniStat(title: "Activity", value: "Runnin")),
+              Expanded(
+                child: _MiniStat(title: "Activity", value: "Runnin"),
+              ),
               SizedBox(width: 12),
-              Expanded(child: _MiniStat(title: "Intensity", value: "High", valueColor: accentGreen)),
+              Expanded(
+                child: _MiniStat(
+                  title: "Intensity",
+                  value: "High",
+                  valueColor: accentGreen,
+                ),
+              ),
               SizedBox(width: 12),
-              Expanded(child: _MiniStat(title: "Steps", value: "8,432")),
+              Expanded(
+                child: _MiniStat(title: "Steps", value: "8,432"),
+              ),
               SizedBox(width: 12),
-              Expanded(child: _MiniStat(title: "Distance", value: "6.2 km")),
+              Expanded(
+                child: _MiniStat(title: "Distance", value: "6.2 km"),
+              ),
             ],
           ),
           const SizedBox(height: 16),
@@ -971,7 +1097,10 @@ class MovementMonitorCard extends StatelessWidget {
                         SizedBox(width: 8),
                         Text(
                           "Accelerometer (3-axis)",
-                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ],
                     ),
@@ -986,13 +1115,20 @@ class MovementMonitorCard extends StatelessWidget {
                             Positioned.fill(
                               child: Opacity(
                                 opacity: 0.22,
-                                child: CustomPaint(painter: const GridPainter(step: 32)),
+                                child: CustomPaint(
+                                  painter: const GridPainter(step: 32),
+                                ),
                               ),
                             ),
                             Positioned.fill(
                               child: Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                                child: CustomPaint(painter: _FakeLineChartPainter()),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 8,
+                                ),
+                                child: CustomPaint(
+                                  painter: _FakeLineChartPainter(),
+                                ),
                               ),
                             ),
                           ],
@@ -1051,7 +1187,11 @@ class _MiniStat extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             value,
-            style: TextStyle(color: valueColor, fontWeight: FontWeight.w700, fontSize: 14),
+            style: TextStyle(
+              color: valueColor,
+              fontWeight: FontWeight.w700,
+              fontSize: 14,
+            ),
           ),
         ],
       ),
@@ -1139,9 +1279,15 @@ class FootageViewerCard extends StatelessWidget {
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: Colors.black.withOpacity(0.25),
-                        border: Border.all(color: Colors.white.withOpacity(0.30)),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.30),
+                        ),
                       ),
-                      child: const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 34),
+                      child: const Icon(
+                        Icons.play_arrow_rounded,
+                        color: Colors.white,
+                        size: 34,
+                      ),
                     ),
                   ),
 
@@ -1152,10 +1298,18 @@ class FootageViewerCard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: const [
-                        Text("Motion Detected",
-                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+                        Text(
+                          "Motion Detected",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
                         SizedBox(height: 3),
-                        Text("2025-12-11 14:32", style: TextStyle(color: mutedText, fontSize: 12)),
+                        Text(
+                          "2025-12-11 14:32",
+                          style: TextStyle(color: mutedText, fontSize: 12),
+                        ),
                       ],
                     ),
                   ),
@@ -1166,7 +1320,10 @@ class FootageViewerCard extends StatelessWidget {
                     bottom: 14,
                     child: Row(
                       children: [
-                        const Text("2:15", style: TextStyle(color: Colors.white, fontSize: 12)),
+                        const Text(
+                          "2:15",
+                          style: TextStyle(color: Colors.white, fontSize: 12),
+                        ),
                         const SizedBox(width: 10),
                         Container(
                           width: 34,
@@ -1174,9 +1331,15 @@ class FootageViewerCard extends StatelessWidget {
                           decoration: BoxDecoration(
                             color: Colors.black.withOpacity(0.25),
                             borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: Colors.white.withOpacity(0.20)),
+                            border: Border.all(
+                              color: Colors.white.withOpacity(0.20),
+                            ),
                           ),
-                          child: const Icon(Icons.download_rounded, color: Colors.white, size: 18),
+                          child: const Icon(
+                            Icons.download_rounded,
+                            color: Colors.white,
+                            size: 18,
+                          ),
                         ),
                       ],
                     ),
@@ -1193,8 +1356,13 @@ class FootageViewerCard extends StatelessWidget {
             children: const [
               Icon(Icons.calendar_month_outlined, color: accentBlue, size: 18),
               SizedBox(width: 8),
-              Text("Recent Captures",
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+              Text(
+                "Recent Captures",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 10),
@@ -1268,13 +1436,19 @@ class _ThumbTile extends StatelessWidget {
                 right: 8,
                 bottom: 8,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.black.withOpacity(0.45),
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(color: Colors.white.withOpacity(0.10)),
                   ),
-                  child: Text(duration, style: const TextStyle(color: Colors.white, fontSize: 11)),
+                  child: Text(
+                    duration,
+                    style: const TextStyle(color: Colors.white, fontSize: 11),
+                  ),
                 ),
               ),
             ],
@@ -1287,9 +1461,9 @@ class _ThumbTile extends StatelessWidget {
 
 /* -------------------- GRID PAINTER -------------------- */
 class GridPainter extends CustomPainter {
-  final double step;          // spacing between lines
-  final double opacity;       // line opacity (0..1)
-  final double strokeWidth;   // line thickness
+  final double step; // spacing between lines
+  final double opacity; // line opacity (0..1)
+  final double strokeWidth; // line thickness
 
   const GridPainter({
     this.step = 28,
