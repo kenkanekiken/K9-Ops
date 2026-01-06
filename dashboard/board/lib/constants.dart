@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'dart:math' as math;
 
 /* -------------------- COLORS -------------------- */
@@ -32,7 +33,6 @@ TextStyle titleStyle() => const TextStyle(
       fontSize: 14,
       fontWeight: FontWeight.w600,
     );
-
 
 /* -------------------- DASHBOARD HEADER (LARGE) -------------------- */
 class DashboardHeader extends StatelessWidget {
@@ -185,6 +185,41 @@ class StatPill extends StatelessWidget {
   }
 }
 
+class TemperatureStatPill extends StatelessWidget {
+  const TemperatureStatPill({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final ref =
+        FirebaseDatabase.instance.ref('devices/teddy/temperature');
+
+    return StreamBuilder<DatabaseEvent>(
+      stream: ref.onValue,
+      builder: (context, snapshot) {
+        String display = "-- °C";
+
+        if (snapshot.hasData) {
+          final value = snapshot.data!.snapshot.value;
+          if (value is num) {
+            display = "${value.toStringAsFixed(1)}°C";
+          } else if (value != null) {
+            final parsed = double.tryParse(value.toString());
+            if (parsed != null) {
+              display = "${parsed.toStringAsFixed(1)}°C";
+            }
+          }
+        }
+
+        return StatPill(
+          icon: Icons.thermostat_outlined,
+          title: "Temperature",
+          value: display,
+        );
+      },
+    );
+  }
+}
+
 class TopStatsRow extends StatelessWidget {
   const TopStatsRow({super.key});
 
@@ -196,7 +231,8 @@ class TopStatsRow extends StatelessWidget {
 
         final items = const [
           StatPill(icon: Icons.favorite_border, title: "Heat Risk", value: "Low"),
-          StatPill(icon: Icons.thermostat_outlined, title: "Temperature", value: "38.5°C"),
+          // StatPill(icon: Icons.thermostat_outlined, title: "Temperature", value: "38.5°C"),
+          TemperatureStatPill(), // 🔥 LIVE FROM FIREBASE
           StatPill(icon: Icons.show_chart, title: "Activity", value: "active"),
           StatPill(icon: Icons.battery_5_bar_outlined, title: "Battery", value: "87%"),
         ];
