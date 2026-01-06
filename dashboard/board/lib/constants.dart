@@ -267,9 +267,9 @@ class TopStatsRow extends StatelessWidget {
   }
 }
 
-// Radar Pulse GPS
+/* -------------------- RADAR PULSE GPS -------------------- */
 class BlueWavePulse extends StatefulWidget {
-  final Widget child;        // your icon/avatar (stays still)
+  final Widget child;        // icon/avatar 
   final double minRadius;    // starting radius
   final double maxRadius;    // ending radius
   final Color color;
@@ -872,7 +872,8 @@ class RecentCommandsPanel extends StatelessWidget {
     );
   }
 }
-//FakeLine
+
+/* -------------------- FAKE LINES ACCELEROMETER -------------------- */
 class _FakeLineChartPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
@@ -1284,7 +1285,7 @@ class _ThumbTile extends StatelessWidget {
   }
 }
 
-/* -------------------- Grid Painters -------------------- */
+/* -------------------- GRID PAINTER -------------------- */
 class GridPainter extends CustomPainter {
   final double step;          // spacing between lines
   final double opacity;       // line opacity (0..1)
