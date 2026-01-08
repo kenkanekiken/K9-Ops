@@ -1,11 +1,10 @@
 #include <Arduino.h>
-
+#include "firebase.h"
+#include <Firebase_ESP_Client.h>
 #include <Wire.h>
 #include <math.h>
-
+extern FirebaseData fbdo;
 // ================= CONFIG =================
-#define SDA_PIN 21
-#define SCL_PIN 22
 #define MPU_ADDR 0x68  
 
 // MPU6050 Registers
@@ -19,6 +18,8 @@
 // For dog step count capture
 #define STEP_THRESHOLD 0.15   // g
 #define MIN_STEP_INTERVAL 200 // ms (max ~5 steps/sec)
+#define MPU_UPLOAD_INTERVAL 2000 
+
 
 float motionBuffer[WINDOW_SIZE];
 int bufferIndex = 0;
@@ -26,6 +27,7 @@ String state;
 unsigned long lastStepTime = 0;
 int stepCount = 0;
 bool aboveThreshold = false;
+static uint32_t lastUploadTime = 0;
 int16_t axRaw, ayRaw, azRaw;
 // ================= FUNCTIONS =================
 void mpuWrite(uint8_t reg, uint8_t data) {
@@ -51,6 +53,8 @@ bool mpuReadAccel(int16_t &ax, int16_t &ay, int16_t &az) {
 }
 
 // ================= SETUP =================
+#define SDA_PIN 21
+#define SCL_PIN 22
 void mpuInit(void) {
   Wire.begin(SDA_PIN, SCL_PIN);
   // Wake up MPU60500
@@ -95,6 +99,26 @@ void mpuRead(void) {
     if (motion < STEP_THRESHOLD * 0.5) {
       aboveThreshold = false;
     }
+
+    if (millis() - lastUploadTime >= MPU_UPLOAD_INTERVAL) {
+      lastUploadTime = millis();
+      
+      FirebaseJson json;
+      json.set("ax", ax);
+      json.set("ay", ay);
+      json.set("az", az);
+
+      json.set("motion", motion);
+      json.set("state", state);
+      json.set("stepCount", stepCount);
+
+      if (Firebase.RTDB.setJSON(&fbdo, "/devices/latest/motion", &json)) { 
+        Serial.println("Motion uploaded OK"); 
+        } else { 
+          Serial.print("Firebase error: "); 
+          Serial.println(fbdo.errorReason()); 
+          } 
+        }
 
 
     Serial.print("AX: "); Serial.print(ax, 3);

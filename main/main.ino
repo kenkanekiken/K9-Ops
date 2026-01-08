@@ -54,5 +54,5 @@ void loop() {
   dhtRead();
   batteryRead();
   // loraRead();
-  // mpuRead();
+  mpuRead();
 }
