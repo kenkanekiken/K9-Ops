@@ -41,51 +41,52 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyB69DTM-dXWLXzZMnm6i1m1Cd2zZw49A1o',
-    appId: '1:106851791798:web:5c4058cf086f3d66d4c717',
-    messagingSenderId: '106851791798',
-    projectId: 'k9ops-259ff',
-    authDomain: 'k9ops-259ff.firebaseapp.com',
-    databaseURL: 'https://k9ops-259ff-default-rtdb.asia-southeast1.firebasedatabase.app',
-    storageBucket: 'k9ops-259ff.firebasestorage.app',
+    apiKey: 'AIzaSyBQlc2s5y65XqZuRzrzAxjTyJLEj6QbVy4',
+    appId: '1:181772489544:web:31e60022c5a447e52d597d',
+    messagingSenderId: '181772489544',
+    projectId: 'k9ops-2f11f',
+    authDomain: 'k9ops-2f11f.firebaseapp.com',
+    databaseURL: 'https://k9ops-2f11f-default-rtdb.asia-southeast1.firebasedatabase.app',
+    storageBucket: 'k9ops-2f11f.firebasestorage.app',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyAHXUwadUrcg2rDc3btfvqShgEKTiBXukA',
-    appId: '1:106851791798:android:e01e327dde88d9a9d4c717',
-    messagingSenderId: '106851791798',
-    projectId: 'k9ops-259ff',
-    databaseURL: 'https://k9ops-259ff-default-rtdb.asia-southeast1.firebasedatabase.app',
-    storageBucket: 'k9ops-259ff.firebasestorage.app',
+    apiKey: 'AIzaSyChrAn3oOVgxqiRGKsJ9IqfALWCywAHY2U',
+    appId: '1:181772489544:android:dd7da92e5844dcb72d597d',
+    messagingSenderId: '181772489544',
+    projectId: 'k9ops-2f11f',
+    databaseURL: 'https://k9ops-2f11f-default-rtdb.asia-southeast1.firebasedatabase.app',
+    storageBucket: 'k9ops-2f11f.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyASGF53_yZxh9NWgqbU8A6r8ni9ttGVfUo',
-    appId: '1:106851791798:ios:45e467c5bbb50918d4c717',
-    messagingSenderId: '106851791798',
-    projectId: 'k9ops-259ff',
-    databaseURL: 'https://k9ops-259ff-default-rtdb.asia-southeast1.firebasedatabase.app',
-    storageBucket: 'k9ops-259ff.firebasestorage.app',
+    apiKey: 'AIzaSyAKRkCLMRCUucA3X3-cMHW0TxrwM8Yp60M',
+    appId: '1:181772489544:ios:e6ccc02279e9eb2a2d597d',
+    messagingSenderId: '181772489544',
+    projectId: 'k9ops-2f11f',
+    databaseURL: 'https://k9ops-2f11f-default-rtdb.asia-southeast1.firebasedatabase.app',
+    storageBucket: 'k9ops-2f11f.firebasestorage.app',
     iosBundleId: 'com.example.board',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyASGF53_yZxh9NWgqbU8A6r8ni9ttGVfUo',
-    appId: '1:106851791798:ios:45e467c5bbb50918d4c717',
-    messagingSenderId: '106851791798',
-    projectId: 'k9ops-259ff',
-    databaseURL: 'https://k9ops-259ff-default-rtdb.asia-southeast1.firebasedatabase.app',
-    storageBucket: 'k9ops-259ff.firebasestorage.app',
+    apiKey: 'AIzaSyAKRkCLMRCUucA3X3-cMHW0TxrwM8Yp60M',
+    appId: '1:181772489544:ios:e6ccc02279e9eb2a2d597d',
+    messagingSenderId: '181772489544',
+    projectId: 'k9ops-2f11f',
+    databaseURL: 'https://k9ops-2f11f-default-rtdb.asia-southeast1.firebasedatabase.app',
+    storageBucket: 'k9ops-2f11f.firebasestorage.app',
     iosBundleId: 'com.example.board',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyB69DTM-dXWLXzZMnm6i1m1Cd2zZw49A1o',
-    appId: '1:106851791798:web:5244d8465d69858dd4c717',
-    messagingSenderId: '106851791798',
-    projectId: 'k9ops-259ff',
-    authDomain: 'k9ops-259ff.firebaseapp.com',
-    databaseURL: 'https://k9ops-259ff-default-rtdb.asia-southeast1.firebasedatabase.app',
-    storageBucket: 'k9ops-259ff.firebasestorage.app',
+    apiKey: 'AIzaSyBQlc2s5y65XqZuRzrzAxjTyJLEj6QbVy4',
+    appId: '1:181772489544:web:5e4b32a25d19610b2d597d',
+    messagingSenderId: '181772489544',
+    projectId: 'k9ops-2f11f',
+    authDomain: 'k9ops-2f11f.firebaseapp.com',
+    databaseURL: 'https://k9ops-2f11f-default-rtdb.asia-southeast1.firebasedatabase.app',
+    storageBucket: 'k9ops-2f11f.firebasestorage.app',
   );
+
 }
