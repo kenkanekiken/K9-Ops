@@ -3,8 +3,12 @@
 #include <Firebase_ESP_Client.h>
 
 // ===== Firebase =====
-#define FIREBASE_HOST "https://k9ops-259ff-default-rtdb.asia-southeast1.firebasedatabase.app/"
-#define FIREBASE_AUTH "FXlxJfJXEaN7ZQiz5lNzGEerfiENiL6KuF1rc3Xf"
+// #define FIREBASE_HOST "https://k9ops-259ff-default-rtdb.asia-southeast1.firebasedatabase.app/" //kenneth
+// #define FIREBASE_AUTH "FXlxJfJXEaN7ZQiz5lNzGEerfiENiL6KuF1rc3Xf"
+
+#define FIREBASE_HOST "https://k9ops-2f11f-default-rtdb.asia-southeast1.firebasedatabase.app/" //FoundboxSG@gmail.com
+#define FIREBASE_AUTH "BcwrEh7pDkIQteADlGTUzTMOmN9cfCakqbTghhi1"
+
 
 // Firebase objects
 FirebaseData fbdo;
@@ -19,4 +23,11 @@ void firebaseInit(void) {
   Firebase.begin(&config, &auth);
   Firebase.reconnectWiFi(true);
   Serial.println("Firebase ready");
+  delay(3000);
+  if (Firebase.RTDB.setString(&fbdo, "/devices/latest/power", true)) {
+    Serial.println("Power on/off uploaded OK");
+  } else {
+    Serial.print("Firebase error: ");
+    Serial.println(fbdo.errorReason());
+  }
 }

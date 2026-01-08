@@ -44,7 +44,7 @@ void batteryRead(void) {
 
     Serial.printf("VBAT=%.3fV  %d%%  USB=%d  CHG=%d\n", vbat, pct, vbus, chg);
 
-    if (Firebase.RTDB.setFloat(&fbdo, "/devices/latest/battery", pct)) {
+    if (Firebase.RTDB.setInt(&fbdo, "/devices/latest/battery", pct)) {
       Serial.println("Battery uploaded OK");
     } else {
       Serial.print("Firebase error: ");
@@ -55,20 +55,23 @@ void batteryRead(void) {
 
 void powerOff(void) {
   static uint32_t pressedAt = 0;
-
   bool pressed = (digitalRead(POWER_BTN) == LOW);
 
   if (pressed && pressedAt == 0) {
     pressedAt = millis();
   }
-
   if (!pressed) {
     pressedAt = 0;
   }
-
   if (pressedAt && (millis() - pressedAt >= 2000)) {
     Serial.println("Powering off...");
     delay(50);
+    if (Firebase.RTDB.setString(&fbdo, "/devices/latest/power", false)) {
+      Serial.println("GPS offline uploaded OK");
+    } else {
+      Serial.print("Firebase error: ");
+      Serial.println(fbdo.errorReason());
+    }
     PMU.shutdown();
   }
 }
