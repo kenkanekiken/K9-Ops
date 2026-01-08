@@ -1,6 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'dart:math' as math;
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'dart:typed_data';
+import 'dart:ui' as ui;
+import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
+import 'dart:async';
+import 'package:flutter/gestures.dart';
+
+final isWeb = kIsWeb;
+
+/* -------------------- Google API -------------------- */
+const String google_api_key = "API_KEY";
 
 /* -------------------- COLORS -------------------- */
 const bg = Color(0xFF0B1220);
@@ -295,6 +307,51 @@ class TopStatsRow extends StatelessWidget {
   }
 }
 
+/* -------------------- GPS Status -------------------- */
+class GpsStatus extends StatelessWidget {
+  const GpsStatus({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final ref = FirebaseDatabase.instance.ref('devices/latest/power');
+
+    return StreamBuilder<DatabaseEvent>(
+      stream: ref.onValue,
+      builder: (context, snapshot) {
+        bool isLive = false;
+
+        if (snapshot.hasData) {
+          final value = snapshot.data!.snapshot.value;
+
+          if (value is bool) {
+            isLive = value;
+          } else if (value != null) {
+            final s = value.toString().toLowerCase();
+            isLive = (s == "true" || s == "live" || s == "online");
+          }
+        }
+
+        final Color c = isLive ? accentGreen : Colors.red;
+
+        return Row(
+          children: [
+            Icon(Icons.circle, size: 8, color: c),
+            const SizedBox(width: 6),
+            Text(
+              isLive ? "Live" : "Offline",
+              style: TextStyle(
+                color: c,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
 /* -------------------- RADAR PULSE GPS -------------------- */
 class BlueWavePulse extends StatefulWidget {
   final Widget child; // icon/avatar
@@ -307,7 +364,7 @@ class BlueWavePulse extends StatefulWidget {
     super.key,
     required this.child,
     this.minRadius = 34,
-    this.maxRadius = 82,
+    this.maxRadius = 50,
     this.color = accentBlue,
     this.duration = const Duration(milliseconds: 1500),
   });
@@ -366,56 +423,136 @@ class _BlueWavePulseState extends State<BlueWavePulse>
   }
 }
 
-class GpsStatus extends StatelessWidget {
-  const GpsStatus({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final ref = FirebaseDatabase.instance.ref('devices/latest/power');
-
-    return StreamBuilder<DatabaseEvent>(
-      stream: ref.onValue,
-      builder: (context, snapshot) {
-        bool isLive = false;
-
-        if (snapshot.hasData) {
-          final value = snapshot.data!.snapshot.value;
-
-          if (value is bool) {
-            isLive = value;
-          } else if (value != null) {
-            final s = value.toString().toLowerCase();
-            isLive = (s == "true" || s == "live" || s == "online");
-          }
-        }
-
-        final Color c = isLive ? accentGreen : Colors.red;
-
-        return Row(
-          children: [
-            Icon(Icons.circle, size: 8, color: c),
-            const SizedBox(width: 6),
-            Text(
-              isLive ? "Live" : "Offline",
-              style: TextStyle(
-                color: c,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-}
-
 /* -------------------- GPS CARD -------------------- */
-class GpsCard extends StatelessWidget {
+class GpsCard extends StatefulWidget {
   const GpsCard({super.key});
 
   @override
+  State<GpsCard> createState() => _GpsCardState();
+}
+
+class _GpsCardState extends State<GpsCard> {
+  // ✅ latest GPS position from Firebase
+  LatLng? _pos;
+
+  // marker icon
+  BitmapDescriptor? navIcon;
+
+  // Map controller + pulse pixel position
+  GoogleMapController? _mapCtrl;
+  Offset? _pulsePx;
+
+  // Pulse settings (match BlueWavePulse maxRadius)
+  static const double _pulseMaxRadius = 50;
+
+  // Small alignment tweak (your current tuning)
+  static const Offset _pulseCenterNudge = Offset(15, 0);
+
+  // Firebase
+  late final DatabaseReference _gpsRef;
+  StreamSubscription<DatabaseEvent>? _gpsSub;
+
+  // Behavior: recenter once until user touches map
+  bool _userInteracted = false;
+  bool _didCenterOnce = false;
+
+  // ----------------- marker bitmap resize -----------------
+  Future<Uint8List> _loadMarkerBytes(String assetPath, int targetWidth) async {
+    final data = await rootBundle.load(assetPath);
+    final codec = await ui.instantiateImageCodec(
+      data.buffer.asUint8List(),
+      targetWidth: targetWidth,
+    );
+    final frame = await codec.getNextFrame();
+    final byteData = await frame.image.toByteData(
+      format: ui.ImageByteFormat.png,
+    );
+    return byteData!.buffer.asUint8List();
+  }
+
+  int _markerSize() => kIsWeb ? 30 : 80;
+
+  num? _toNum(dynamic v) {
+    if (v is num) return v;
+    if (v is String) return num.tryParse(v);
+    return null;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Load custom nav icon
+    _loadMarkerBytes('assets/navigationIcon.png', _markerSize())
+        .then((bytes) {
+          if (!mounted) return;
+          setState(() => navIcon = BitmapDescriptor.fromBytes(bytes));
+        })
+        .catchError((e) => debugPrint("Marker icon load/resize failed: $e"));
+
+    // Listen to GPS from Firebase (NO hardcode)
+    _gpsRef = FirebaseDatabase.instance.ref('devices/latest');
+    _gpsSub = _gpsRef.onValue.listen((event) async {
+      final data = event.snapshot.value;
+      if (data is! Map) return;
+
+      final lat = _toNum(data['latitude']);
+      final lon = _toNum(data['longitude']);
+      if (lat == null || lon == null) return;
+
+      final newPos = LatLng(lat.toDouble(), lon.toDouble());
+
+      if (!mounted) return;
+      setState(() => _pos = newPos);
+
+      // Keep pulse synced (if map is ready)
+      await _updatePulsePosition(newPos);
+
+      // Center camera only once (until user touches map)
+      if (_mapCtrl != null && !_userInteracted && !_didCenterOnce) {
+        _didCenterOnce = true;
+        await _mapCtrl!.animateCamera(CameraUpdate.newLatLng(newPos));
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _gpsSub?.cancel();
+    _mapCtrl?.dispose();
+    super.dispose();
+  }
+
+  // LatLng -> pixel position inside the map widget
+  Future<void> _updatePulsePosition(LatLng pos) async {
+    final c = _mapCtrl;
+    if (c == null) return;
+
+    try {
+      final sc = await c.getScreenCoordinate(pos);
+
+      // Default conversion (works for web + android)
+      final dpr = MediaQuery.of(context).devicePixelRatio;
+      double dx = sc.x.toDouble() / dpr;
+      double dy = sc.y.toDouble() / dpr;
+
+      // iOS sometimes reports coordinates in a different unit
+      if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
+        // Try using raw values on iOS (this fixes “way off” for many setups)
+        dx = sc.x.toDouble();
+        dy = sc.y.toDouble();
+      }
+
+      if (!mounted) return;
+      setState(() => _pulsePx = Offset(dx, dy));
+    } catch (_) {
+      // ignore
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final pos = _pos;
     return GlassCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -436,43 +573,111 @@ class GpsCard extends StatelessWidget {
           const SizedBox(height: 14),
 
           Expanded(
-            child: Container(
-              decoration: BoxDecoration(
-                color: softBg,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: cardBorder),
-              ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(14),
               child: Stack(
                 children: [
-                  Positioned.fill(
-                    child: Opacity(
-                      opacity: 0.22,
-                      child: CustomPaint(painter: const GridPainter()),
-                    ),
-                  ),
-                  const Positioned(
-                    left: 12,
-                    top: 12,
-                    child: LiveCoordinatesBox(),
-                  ),
-                  const Positioned(
-                    right: 12,
-                    top: 12,
-                    child: _MiniInfoBox(
-                      title: "Accuracy",
-                      value: "±5m",
-                      valueColor: accentGreen,
-                    ),
-                  ),
-                  Center(
-                    child: BlueWavePulse(
-                      child: const CircleAvatar(
-                        radius: 26,
-                        backgroundColor: Color(0xFF1B4DFF),
-                        child: Icon(Icons.navigation, color: Colors.white),
+                  if (pos == null)
+                    // ✅ No hardcode: show placeholder until Firebase gives coordinates
+                    Container(
+                      color: softBg,
+                      alignment: Alignment.center,
+                      child: const Text(
+                        "Waiting for GPS…",
+                        style: TextStyle(color: Colors.white70),
+                      ),
+                    )
+                  else
+                    Positioned.fill(
+                      child: GoogleMap(
+                        initialCameraPosition: CameraPosition(
+                          target: pos,
+                          zoom: 16,
+                        ),
+                        onMapCreated: (c) {
+                          _mapCtrl = c;
+
+                          // wait one frame then compute pulse
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            _updatePulsePosition(pos);
+                          });
+                        },
+
+                        onCameraMoveStarted: () {
+                          // user touched the map -> stop auto-centering
+                          _userInteracted = true;
+                        },
+
+                        onCameraIdle: () {
+                          // when map settles, re-sync pulse
+                          _updatePulsePosition(pos);
+                        },
+
+                        markers: {
+                          Marker(
+                            markerId: const MarkerId("source"),
+                            position: pos,
+                            icon:
+                                navIcon ??
+                                BitmapDescriptor.defaultMarkerWithHue(
+                                  BitmapDescriptor.hueAzure,
+                                ),
+                            anchor: const Offset(0.5, 0.5),
+                            flat: true,
+                          ),
+                        },
+
+                        zoomControlsEnabled: true,
+                        compassEnabled: true,
+                        mapToolbarEnabled: true,
+                        // ✅ allow pinch zoom
+                        scrollGesturesEnabled: true,
+                        zoomGesturesEnabled: true,
+                        rotateGesturesEnabled: true,
+                        tiltGesturesEnabled: false,
+                        // ✅ keep page scroll working, but don't block pinch
+                        gestureRecognizers: {
+                          Factory<OneSequenceGestureRecognizer>(
+                            () => EagerGestureRecognizer(),
+                          ),
+                        },
                       ),
                     ),
-                  ),
+
+                  // overlays
+                  if (pos != null) ...[
+                    Positioned(
+                      left: 12,
+                      top: 12,
+                      child: LiveCoordinatesBox(pos: pos),
+                    ),
+                    const Positioned(
+                      right: 12,
+                      top: 12,
+                      child: _MiniInfoBox(
+                        title: "Accuracy",
+                        value: "±5m",
+                        valueColor: accentGreen,
+                      ),
+                    ),
+
+                    // pulse (locked to marker)
+                    if (_pulsePx != null)
+                      Positioned(
+                        left:
+                            (_pulsePx!.dx + _pulseCenterNudge.dx) -
+                            _pulseMaxRadius,
+                        top:
+                            (_pulsePx!.dy + _pulseCenterNudge.dy) -
+                            _pulseMaxRadius,
+                        child: IgnorePointer(
+                          child: BlueWavePulse(
+                            child: const SizedBox.shrink(),
+                            maxRadius: _pulseMaxRadius,
+                          ),
+                        ),
+                      ),
+                  ],
                 ],
               ),
             ),
@@ -509,40 +714,16 @@ class GpsCard extends StatelessWidget {
 }
 
 /* -------------------- Live Coordinates -------------------- */
+// ✅ No Firebase here anymore — it displays the SAME LatLng the map uses
 class LiveCoordinatesBox extends StatelessWidget {
-  const LiveCoordinatesBox({super.key});
+  final LatLng pos;
+  const LiveCoordinatesBox({super.key, required this.pos});
 
   @override
   Widget build(BuildContext context) {
-    final ref = FirebaseDatabase.instance.ref('devices/latest');
-
-    return StreamBuilder<DatabaseEvent>(
-      stream: ref.onValue,
-      builder: (context, snapshot) {
-        String coordText = "--, --";
-
-        final data = snapshot.data?.snapshot.value;
-        if (data is Map) {
-          final latRaw = data['latitude'];
-          final lonRaw = data['longitude'];
-
-          final lat = _toNum(latRaw);
-          final lon = _toNum(lonRaw);
-
-          if (lat != null && lon != null) {
-            coordText = "${lat.toStringAsFixed(6)}, ${lon.toStringAsFixed(6)}";
-          }
-        }
-
-        return _MiniInfoBox(title: "Coordinates", value: coordText);
-      },
-    );
-  }
-
-  num? _toNum(dynamic v) {
-    if (v is num) return v;
-    if (v is String) return num.tryParse(v);
-    return null;
+    final coordText =
+        "${pos.latitude.toStringAsFixed(6)}, ${pos.longitude.toStringAsFixed(6)}";
+    return _MiniInfoBox(title: "Coordinates", value: coordText);
   }
 }
 

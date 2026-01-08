@@ -7,6 +7,7 @@ import 'responsive/responsive_layout.dart';
 import 'responsive/mobile_scaffold.dart';
 import 'responsive/tablet_scaffold.dart';
 import 'responsive/desktop_scaffold.dart';
+import 'live_tracking_page.dart'; //
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -27,6 +28,7 @@ class MyApp extends StatelessWidget {
         tabletScaffold: const TabletScaffold(),
         desktopScaffold: const DesktopScaffold(),
       ),
+      // home: const LiveTrackingPage(),
     );
   }
 }

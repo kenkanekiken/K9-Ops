@@ -18,11 +18,11 @@ class _TabletScaffoldState extends State<TabletScaffold> {
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
-            const DashboardHeader(
-              title: "12's Dashboard",
-              subtitle: "Live monitoring & control",
-            ),
-            const SizedBox(height: 16),
+              const DashboardHeader(
+                title: "Dog's Dashboard",
+                subtitle: "Live monitoring & control",
+              ),
+              const SizedBox(height: 16),
               const TopStatsRow(),
               const SizedBox(height: 16),
 
@@ -38,10 +38,7 @@ class _TabletScaffoldState extends State<TabletScaffold> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: const [
                   Expanded(
-                    child: SizedBox(
-                      height: 500,
-                      child: MovementMonitorCard(),
-                    ),
+                    child: SizedBox(height: 500, child: MovementMonitorCard()),
                   ),
                   SizedBox(width: 16),
                   Expanded(
@@ -64,7 +61,7 @@ class _TabletScaffoldState extends State<TabletScaffold> {
             ],
           ),
         ),
-      ),   
+      ),
     );
   }
 }

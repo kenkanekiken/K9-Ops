@@ -19,7 +19,7 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
           child: Column(
             children: [
               const DashboardHeader(
-                title: "12's Dashboard",
+                title: "Dog's Dashboard",
                 subtitle: "Live monitoring & control",
               ),
               const SizedBox(height: 18),
@@ -67,17 +67,11 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
               Row(
                 children: const [
                   Expanded(
-                    child: SizedBox(
-                      height: 600,
-                      child: MovementMonitorCard(),
-                    ),
+                    child: SizedBox(height: 600, child: MovementMonitorCard()),
                   ),
                   SizedBox(width: 18),
                   Expanded(
-                    child: SizedBox(
-                      height: 600,
-                      child: FootageViewerCard(),
-                    ),
+                    child: SizedBox(height: 600, child: FootageViewerCard()),
                   ),
                 ],
               ),
@@ -86,5 +80,5 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
         ),
       ),
     );
-  }  
+  }
 }

@@ -19,7 +19,7 @@ class _MobileScaffoldState extends State<MobileScaffold> {
           child: Column(
             children: const [
               DashboardHeader(
-                title: "12's Dashboard",
+                title: "Dog's Dashboard",
                 subtitle: "Live monitoring & control",
               ),
               SizedBox(height: 14),
