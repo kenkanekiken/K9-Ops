@@ -15,8 +15,16 @@ TinyGPSPlus gps;
 static const int GPS_RX_PIN = 34;   // ESP32 RX <- GPS TX
 static const int GPS_TX_PIN = 12;   // ESP32 TX -> GPS RX
 static const uint32_t GPS_BAUD = 9600;
-// unsigned long latitude;
-// unsigned long longitude;
+double lastLat = 0;
+double lastLng = 0;
+unsigned long lastCalculationTime = 0;
+const long interval = 20000; 
+
+// New: Array to store last 25 speeds (in m/s)
+const int MAX_SPEED_HISTORY = 25;
+double speedHistory[MAX_SPEED_HISTORY];
+int speedHistoryIndex = 0;
+bool speedHistoryFull = false;
 
 HardwareSerial GPSSerial(1);
 
@@ -54,8 +62,6 @@ void gpsRead(void) {
     Serial.print(gps.hdop.isValid() ? gps.hdop.hdop() : 99.9, 1);
 
     if (gps.location.isValid()) {
-      // latitude  = gps.location.lat();
-      // longitude  = gps.location.lng();
       Serial.print(" | Lat: ");
       Serial.print(gps.location.lat(), 6);
       Serial.print(" | Lng: ");
@@ -76,6 +82,60 @@ void gpsRead(void) {
       }
     }
     Serial.println();
+  }
+
+  unsigned long currentMillis = millis();
+
+  if (currentMillis - lastCalculationTime >= interval) {
+    if (gps.location.isValid()) {
+      double currentLat = gps.location.lat();
+      double currentLng = gps.location.lng();
+
+      if (lastLat != 0 && lastLng != 0) {
+        // 1. Calculate distance in meters
+        double distanceMeters = TinyGPSPlus::distanceBetween(currentLat, currentLng, lastLat, lastLng);
+        
+        // 2. Calculate speed (m/s) -> (Distance / Time)
+        // interval is in ms, so divide by 1000
+        double speedMs = distanceMeters / (interval / 1000.0);
+        double speedKmH = speedMs * 3.6; // Convert to km/h if preferred
+
+        // New: Store speed in history array
+        speedHistory[speedHistoryIndex] = speedMs;
+        speedHistoryIndex = (speedHistoryIndex + 1) % MAX_SPEED_HISTORY;
+        if (speedHistoryIndex == 0) {
+          speedHistoryFull = true;
+        }
+
+        // New: Upload the entire speed history array to Firebase
+        FirebaseJson json;
+        for (int i = 0; i < (speedHistoryFull ? MAX_SPEED_HISTORY : speedHistoryIndex); i++) {
+          int idx = (speedHistoryIndex - 1 - i + MAX_SPEED_HISTORY) % MAX_SPEED_HISTORY;
+          json.set(String(i), speedHistory[idx]);
+        }
+        if (Firebase.RTDB.setJSON(&fbdo, "/devices/latest/speed_history_array", &json)) {
+          Serial.println("Speed history array uploaded OK");
+        } else {
+          Serial.print("Firebase error Speed Array: ");
+          Serial.println(fbdo.errorReason());
+        }
+
+        // Optional: Still push individual for other uses, but now we have the array
+        String path = "/devices/latest/speed_history";
+        FirebaseJson jsonSingle;
+        jsonSingle.set("speed", speedMs);
+        jsonSingle.set("ts", currentMillis); // Timestamp
+
+        if (Firebase.RTDB.pushJSON(&fbdo, path, &jsonSingle)) {
+          Serial.println("Speed data pushed to Firebase");
+        }
+      }
+
+      // Update "last" coordinates for next cycle
+      lastLat = currentLat;
+      lastLng = currentLng;
+      lastCalculationTime = currentMillis;
+    }
   }
 }
 
