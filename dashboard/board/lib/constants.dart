@@ -231,12 +231,7 @@ class BatteryStatPill extends StatelessWidget {
         if (snapshot.hasData) {
           final value = snapshot.data!.snapshot.value;
           if (value is num) {
-            display = "${value.toStringAsFixed(1)}%";
-          } else if (value != null) {
-            final parsed = double.tryParse(value.toString());
-            if (parsed != null) {
-              display = "${parsed.toStringAsFixed(1)}°C";
-            }
+            display = "${value.toInt()}%";
           }
         }
 
@@ -371,6 +366,50 @@ class _BlueWavePulseState extends State<BlueWavePulse>
   }
 }
 
+class GpsStatus extends StatelessWidget {
+  const GpsStatus({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final ref = FirebaseDatabase.instance.ref('devices/latest/power');
+
+    return StreamBuilder<DatabaseEvent>(
+      stream: ref.onValue,
+      builder: (context, snapshot) {
+        bool isLive = false;
+
+        if (snapshot.hasData) {
+          final value = snapshot.data!.snapshot.value;
+
+          if (value is bool) {
+            isLive = value;
+          } else if (value != null) {
+            final s = value.toString().toLowerCase();
+            isLive = (s == "true" || s == "live" || s == "online");
+          }
+        }
+
+        final Color c = isLive ? accentGreen : Colors.red;
+
+        return Row(
+          children: [
+            Icon(Icons.circle, size: 8, color: c),
+            const SizedBox(width: 6),
+            Text(
+              isLive ? "Live" : "Offline",
+              style: TextStyle(
+                color: c,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
 /* -------------------- GPS CARD -------------------- */
 class GpsCard extends StatelessWidget {
   const GpsCard({super.key});
@@ -389,20 +428,7 @@ class GpsCard extends StatelessWidget {
               const SizedBox(width: 8),
               const Text("📍"),
               const Spacer(),
-              Row(
-                children: const [
-                  Icon(Icons.circle, size: 8, color: accentGreen),
-                  SizedBox(width: 6),
-                  Text(
-                    "Live",
-                    style: TextStyle(
-                      color: accentGreen,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
+              const GpsStatus(),
             ],
           ),
           const SizedBox(height: 4),
@@ -473,8 +499,8 @@ class GpsCard extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: const [
                     _TinyKV(k: "Weather", v: "Clear"),
-                    _TinyKV(k: "Temperature", v: "18°C"),
-                    _TinyKV(k: "Terrain", v: "Urban Park"),
+                    // _TinyKV(k: "Temperature", v: "18°C"),
+                    TemperatureStatPill(),
                   ],
                 ),
               ),
