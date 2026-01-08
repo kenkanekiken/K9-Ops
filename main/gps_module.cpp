@@ -1,11 +1,14 @@
 #include <Arduino.h>
 #include "gps_module.h"
+#include "firebase.h"
+#include <Firebase_ESP_Client.h>
 
 //Enable GPS POwer and calling GPS
 #include <Wire.h>
 #include <axp20x.h>
 #include <TinyGPSPlus.h>
 
+extern FirebaseData fbdo;
 AXP20X_Class axp;
 TinyGPSPlus gps;
 

@@ -15,15 +15,17 @@
 // Pin 2 LED
 #define POWER_BTN 38   // example GPIO
 // ===== WiFi =====
-const char* ssid = "K&K";
-const char* password = "Songbird7108";
+// const char* ssid = "K&K";
+// const char* password = "Songbird7108";
+const char* ssid = "Jun Leis S23+";
+const char* password = "lmaoooooo";
 
 void wifiInit(void) {
   WiFi.begin(ssid, password);
   Serial.print("WiFi connecting");
-  while (WiFi.status() != WL_CONNECTED) {
+  if (WiFi.status() != WL_CONNECTED) {
     delay(400);
-    Serial.print(".");
+    Serial.print("Wifi not connected");
   }
   Serial.println("\nWiFi connected");
   Serial.print("IP: ");
