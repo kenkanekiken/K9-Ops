@@ -50,7 +50,7 @@ void setup() {
 void loop() {
   powerOff();
   // blink_led(2);
-  // gpsRead();
+  gpsRead();
   dhtRead();
   batteryRead();
   // loraRead();

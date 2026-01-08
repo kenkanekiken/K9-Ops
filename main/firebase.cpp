@@ -23,9 +23,9 @@ void firebaseInit(void) {
   Firebase.begin(&config, &auth);
   Firebase.reconnectWiFi(true);
   Serial.println("Firebase ready");
-  delay(1000);
+  delay(3000);
   if (Firebase.RTDB.setString(&fbdo, "/devices/latest/power", true)) {
-    Serial.println("GPS live uploaded OK");
+    Serial.println("Power on/off uploaded OK");
   } else {
     Serial.print("Firebase error: ");
     Serial.println(fbdo.errorReason());
