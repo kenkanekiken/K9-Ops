@@ -1146,8 +1146,7 @@ class MovementMonitorCard extends StatelessWidget {
           Row(
             children: const [
               Expanded(
-                child: _MiniStat(title: "Activity", value: "Runnin"),
-              ),
+                child: ActivityStat()),
               SizedBox(width: 12),
               Expanded(
                 child: _MiniStat(
@@ -1158,8 +1157,7 @@ class MovementMonitorCard extends StatelessWidget {
               ),
               SizedBox(width: 12),
               Expanded(
-                child: _MiniStat(title: "Steps", value: "8,432"),
-              ),
+                child: StepCountStat()),
               SizedBox(width: 12),
               Expanded(
                 child: _MiniStat(title: "Distance", value: "6.2 km"),
@@ -1248,6 +1246,68 @@ class MovementMonitorCard extends StatelessWidget {
     );
   }
 }
+
+class ActivityStat extends StatelessWidget {
+  const ActivityStat({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final ref =
+        FirebaseDatabase.instance.ref('devices/latest/motion/state');
+
+    return StreamBuilder<DatabaseEvent>(
+      stream: ref.onValue,
+      builder: (context, snapshot) {
+        String state = "--";
+        Color color = mutedText;
+
+        final v = snapshot.data?.snapshot.value;
+        if (v != null) {
+          state = v.toString();
+
+          if (state == "running") color = accentGreen;
+          else if (state == "walking") color = accentBlue;
+        }
+
+        return _MiniStat(
+          title: "Activity",
+          value: state.isNotEmpty
+              ? state[0].toUpperCase() + state.substring(1)
+              : "--",
+          valueColor: color,
+        );
+      },
+    );
+  }
+}
+
+class StepCountStat extends StatelessWidget {
+  const StepCountStat({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final ref =
+        FirebaseDatabase.instance.ref('devices/latest/motion/stepCount');
+
+    return StreamBuilder<DatabaseEvent>(
+      stream: ref.onValue,
+      builder: (context, snapshot) {
+        String steps = "--";
+
+        final v = snapshot.data?.snapshot.value;
+        if (v is num) {
+          steps = v.toInt().toString();
+        }
+
+        return _MiniStat(
+          title: "Steps",
+          value: steps,
+        );
+      },
+    );
+  }
+}
+
 
 class _MiniStat extends StatelessWidget {
   final String title;

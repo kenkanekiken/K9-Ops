@@ -18,7 +18,7 @@ extern FirebaseData fbdo;
 // For dog step count capture
 #define STEP_THRESHOLD 0.15   // g
 #define MIN_STEP_INTERVAL 200 // ms (max ~5 steps/sec)
-#define MPU_UPLOAD_INTERVAL 2000 
+#define MPU_UPLOAD_INTERVAL 500 
 
 
 float motionBuffer[WINDOW_SIZE];
