@@ -453,10 +453,7 @@ class GpsCard extends StatelessWidget {
                   const Positioned(
                     left: 12,
                     top: 12,
-                    child: _MiniInfoBox(
-                      title: "Coordinates",
-                      value: "40.758967,  -73.985005",
-                    ),
+                    child: LiveCoordinatesBox(),
                   ),
                   const Positioned(
                     right: 12,
@@ -499,8 +496,7 @@ class GpsCard extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: const [
                     _TinyKV(k: "Weather", v: "Clear"),
-                    // _TinyKV(k: "Temperature", v: "18°C"),
-                    TemperatureStatPill(),
+                    GPSTemperature(),
                   ],
                 ),
               ),
@@ -512,6 +508,73 @@ class GpsCard extends StatelessWidget {
   }
 }
 
+/* -------------------- Live Coordinates -------------------- */
+class LiveCoordinatesBox extends StatelessWidget {
+  const LiveCoordinatesBox({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final ref = FirebaseDatabase.instance.ref('devices/latest');
+
+    return StreamBuilder<DatabaseEvent>(
+      stream: ref.onValue,
+      builder: (context, snapshot) {
+        String coordText = "--, --";
+
+        final data = snapshot.data?.snapshot.value;
+        if (data is Map) {
+          final latRaw = data['latitude'];
+          final lonRaw = data['longitude'];
+
+          final lat = _toNum(latRaw);
+          final lon = _toNum(lonRaw);
+
+          if (lat != null && lon != null) {
+            coordText = "${lat.toStringAsFixed(6)}, ${lon.toStringAsFixed(6)}";
+          }
+        }
+
+        return _MiniInfoBox(title: "Coordinates", value: coordText);
+      },
+    );
+  }
+
+  num? _toNum(dynamic v) {
+    if (v is num) return v;
+    if (v is String) return num.tryParse(v);
+    return null;
+  }
+}
+
+/* -------------------- Temperature Pill -------------------- */
+class GPSTemperature extends StatelessWidget {
+  const GPSTemperature({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final ref = FirebaseDatabase.instance.ref('devices/latest/temperature');
+
+    return StreamBuilder<DatabaseEvent>(
+      stream: ref.onValue,
+      builder: (context, snapshot) {
+        String display = "-- °C";
+
+        final v = snapshot.data?.snapshot.value;
+
+        if (v is num) {
+          display = "${v.toStringAsFixed(1)}°C";
+        } else if (v is String) {
+          final parsed = num.tryParse(v);
+          if (parsed != null) display = "${parsed.toStringAsFixed(1)}°C";
+        }
+
+        return _TinyKV(k: "Temperature", v: display);
+      },
+    );
+  }
+}
+
+/* -------------------- Tiny KV -------------------- */
 class _TinyKV extends StatelessWidget {
   final String k;
   final String v;
@@ -521,6 +584,7 @@ class _TinyKV extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
         Text(k, style: labelStyle()),
         const SizedBox(height: 2),

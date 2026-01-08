@@ -46,7 +46,8 @@ class DefaultFirebaseOptions {
     messagingSenderId: '106851791798',
     projectId: 'k9ops-259ff',
     authDomain: 'k9ops-259ff.firebaseapp.com',
-    databaseURL: 'https://k9ops-259ff-default-rtdb.asia-southeast1.firebasedatabase.app',
+    databaseURL:
+        'https://k9ops-259ff-default-rtdb.asia-southeast1.firebasedatabase.app',
     storageBucket: 'k9ops-259ff.firebasestorage.app',
   );
 
@@ -55,7 +56,8 @@ class DefaultFirebaseOptions {
     appId: '1:106851791798:android:e01e327dde88d9a9d4c717',
     messagingSenderId: '106851791798',
     projectId: 'k9ops-259ff',
-    databaseURL: 'https://k9ops-259ff-default-rtdb.asia-southeast1.firebasedatabase.app',
+    databaseURL:
+        'https://k9ops-259ff-default-rtdb.asia-southeast1.firebasedatabase.app',
     storageBucket: 'k9ops-259ff.firebasestorage.app',
   );
 
@@ -64,7 +66,8 @@ class DefaultFirebaseOptions {
     appId: '1:106851791798:ios:45e467c5bbb50918d4c717',
     messagingSenderId: '106851791798',
     projectId: 'k9ops-259ff',
-    databaseURL: 'https://k9ops-259ff-default-rtdb.asia-southeast1.firebasedatabase.app',
+    databaseURL:
+        'https://k9ops-259ff-default-rtdb.asia-southeast1.firebasedatabase.app',
     storageBucket: 'k9ops-259ff.firebasestorage.app',
     iosBundleId: 'com.example.board',
   );
@@ -74,7 +77,8 @@ class DefaultFirebaseOptions {
     appId: '1:106851791798:ios:45e467c5bbb50918d4c717',
     messagingSenderId: '106851791798',
     projectId: 'k9ops-259ff',
-    databaseURL: 'https://k9ops-259ff-default-rtdb.asia-southeast1.firebasedatabase.app',
+    databaseURL:
+        'https://k9ops-259ff-default-rtdb.asia-southeast1.firebasedatabase.app',
     storageBucket: 'k9ops-259ff.firebasestorage.app',
     iosBundleId: 'com.example.board',
   );
@@ -85,7 +89,8 @@ class DefaultFirebaseOptions {
     messagingSenderId: '106851791798',
     projectId: 'k9ops-259ff',
     authDomain: 'k9ops-259ff.firebaseapp.com',
-    databaseURL: 'https://k9ops-259ff-default-rtdb.asia-southeast1.firebasedatabase.app',
+    databaseURL:
+        'https://k9ops-259ff-default-rtdb.asia-southeast1.firebasedatabase.app',
     storageBucket: 'k9ops-259ff.firebasestorage.app',
   );
 }
