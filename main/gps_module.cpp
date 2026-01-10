@@ -97,11 +97,10 @@ void gpsRead(void) {
         
         // 2. Calculate speed (m/s) -> (Distance / Time)
         // interval is in ms, so divide by 1000
-        double speedMs = distanceMeters / (interval / 1000.0);
-        double speedKmH = speedMs * 3.6; // Convert to km/h if preferred
+        double speedKmh = (distanceMeters / (interval / 1000.0)) * 3.6; // Convert m/s to km/h
 
         // New: Store speed in history array
-        speedHistory[speedHistoryIndex] = speedMs;
+        speedHistory[speedHistoryIndex] = speedKmh;
         speedHistoryIndex = (speedHistoryIndex + 1) % MAX_SPEED_HISTORY;
         if (speedHistoryIndex == 0) {
           speedHistoryFull = true;
@@ -121,9 +120,9 @@ void gpsRead(void) {
         }
 
         // Optional: Still push individual for other uses, but now we have the array
-        String path = "/devices/latest/speed_history";
+        String path = "/devices/latest/speed";
         FirebaseJson jsonSingle;
-        jsonSingle.set("speed", speedMs);
+        jsonSingle.set("speed", speedKmh); // Speed in km/h
         jsonSingle.set("ts", currentMillis); // Timestamp
 
         if (Firebase.RTDB.pushJSON(&fbdo, path, &jsonSingle)) {
