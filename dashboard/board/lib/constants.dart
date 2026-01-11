@@ -1257,6 +1257,49 @@ class RecentCommandsPanel extends StatelessWidget {
   }
 }
 
+/* -------------------- SPEED LINE CHART PAINTER -------------------- */
+class SpeedLineChartPainter extends CustomPainter {
+  final List<double> speeds;
+
+  SpeedLineChartPainter(this.speeds);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    print('Painting with speeds: $speeds, size: $size');
+    List<double> dataToDraw = speeds.isNotEmpty ? speeds : [0, 5, 10, 8, 12, 6]; // Fallback fake data
+    if (dataToDraw.isEmpty) return;
+
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.2
+      ..color = accentBlue.withOpacity(0.95);
+
+    final path = Path();
+
+    double maxSpeed = dataToDraw.reduce(math.max);
+    if (maxSpeed == 0) maxSpeed = 1; // Avoid division by zero
+
+    for (int i = 0; i < dataToDraw.length; i++) {
+      final t = i / (dataToDraw.length - 1).toDouble();
+      final x = t * size.width;
+      final y = size.height - (dataToDraw[i] / maxSpeed) * size.height * 0.8; // Leave some margin
+
+      if (i == 0) {
+        path.moveTo(x, y);
+      } else {
+        path.lineTo(x, y);
+      }
+    }
+
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant SpeedLineChartPainter oldDelegate) {
+    return oldDelegate.speeds != speeds;
+  }
+}
+
 /* -------------------- FAKE LINES ACCELEROMETER -------------------- */
 class _FakeLineChartPainter extends CustomPainter {
   @override
@@ -1296,9 +1339,35 @@ class _FakeLineChartPainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
-/* -------------------- MOVEMENT MONITOR (LEFT) -------------------- */
-class MovementMonitorCard extends StatelessWidget {
+class MovementMonitorCard extends StatefulWidget {
   const MovementMonitorCard({super.key});
+
+  @override
+  State<MovementMonitorCard> createState() => _MovementMonitorCardState();
+}
+
+class _MovementMonitorCardState extends State<MovementMonitorCard> {
+  List<double> speedHistory = [];
+
+  @override
+  void initState() {
+    super.initState();
+    FirebaseDatabase.instance.ref('/devices/latest/speed_history_array').onValue.listen((event) {
+      final data = event.snapshot.value;
+      print('Firebase data received: $data');
+      if (data is Map) {
+        speedHistory = data.values.map((e) => (e as num).toDouble()).toList();
+        print('Parsed speedHistory from Map: $speedHistory');
+        setState(() {});
+      } else if (data is List) {
+        speedHistory = data.map((e) => (e as num).toDouble()).toList();
+        print('Parsed speedHistory from List: $speedHistory');
+        setState(() {});
+      } else {
+        print('Data is neither Map nor List: ${data.runtimeType}');
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1316,7 +1385,7 @@ class MovementMonitorCard extends StatelessWidget {
                 children: [
                   Text("Movement Monitor", style: titleStyle()),
                   const SizedBox(height: 2),
-                  Text("Accelerometer data & activity", style: labelStyle()),
+                  Text("Speed history & activity", style: labelStyle()),
                 ],
               ),
             ],
@@ -1365,7 +1434,7 @@ class MovementMonitorCard extends StatelessWidget {
                         Icon(Icons.show_chart, color: accentBlue, size: 18),
                         SizedBox(width: 8),
                         Text(
-                          "Accelerometer (3-axis)",
+                          "Speed History",
                           style: TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.w600,
@@ -1375,7 +1444,7 @@ class MovementMonitorCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
 
-                    // Grid + fake lines
+                    // Grid + lines
                     Expanded(
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(12),
@@ -1396,7 +1465,7 @@ class MovementMonitorCard extends StatelessWidget {
                                   vertical: 8,
                                 ),
                                 child: CustomPaint(
-                                  painter: _FakeLineChartPainter(),
+                                  painter: SpeedLineChartPainter(speedHistory),
                                 ),
                               ),
                             ),
@@ -1410,11 +1479,7 @@ class MovementMonitorCard extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: const [
-                        _LegendDot(color: Color(0xFF2DB7FF), label: "X-axis"),
-                        SizedBox(width: 14),
-                        _LegendDot(color: Color(0xFF2FE57A), label: "Y-axis"),
-                        SizedBox(width: 14),
-                        _LegendDot(color: Color(0xFFFFA41B), label: "Z-axis"),
+                        _LegendDot(color: accentBlue, label: "Speed (km/h)"),
                       ],
                     ),
                   ],
