@@ -1300,7 +1300,7 @@ class SpeedLineChartPainter extends CustomPainter {
   }
 }
 
-/* -------------------- FAKE LINES ACCELEROMETER -------------------- */
+/* -------------------- FAKE LINES ACCELEROMETER --------------------
 class _FakeLineChartPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
@@ -1337,7 +1337,7 @@ class _FakeLineChartPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
+} */
 
 class MovementMonitorCard extends StatefulWidget {
   const MovementMonitorCard({super.key});
