@@ -17,7 +17,7 @@ void dhtInit(void) {
 void dhtRead(void) {
   static uint32_t lastTime = 0;
 
-  if (millis() - lastTime >= 120000) { // 2 Minutes
+  if (millis() - lastTime >= 5000) { // 2 Minutes 1200000
     lastTime = millis();
     auto data = dht.getTempAndHumidity();
 

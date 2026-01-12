@@ -72,6 +72,12 @@ void powerOff(void) {
       Serial.print("Firebase error: ");
       Serial.println(fbdo.errorReason());
     }
+    if (Firebase.RTDB.setBool(&fbdo, "/devices/latest/gpsStatus", false)) {
+      Serial.println("GPS offline uploaded OK");
+    } else {
+      Serial.print("Firebase error: ");
+      Serial.println(fbdo.errorReason());
+    }
     PMU.shutdown();
   }
 }

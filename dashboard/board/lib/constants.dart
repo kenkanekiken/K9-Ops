@@ -71,6 +71,7 @@ class DashboardHeader extends StatelessWidget {
         ],
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Big icon block
           Container(
@@ -85,32 +86,95 @@ class DashboardHeader extends StatelessWidget {
           ),
           const SizedBox(width: 18),
 
-          // Title + subtitle
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 28, // 👈 BIG
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.4,
+          // Title + subtitle (left) + status (right)
+          Expanded(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Left text
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 28,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.4,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        subtitle,
+                        style: const TextStyle(
+                          color: mutedText,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                subtitle,
-                style: const TextStyle(
-                  color: mutedText,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
+
+                const SizedBox(width: 12),
+
+                // Right status (top-right)
+                const Padding(
+                  padding: EdgeInsets.only(top: 4),
+                  child: PowerStatus(), // reads devices/latest/power
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),
+    );
+  }
+}
+
+/* -------------------- GPS Status -------------------- */
+class PowerStatus extends StatelessWidget {
+  const PowerStatus({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final ref = FirebaseDatabase.instance.ref('devices/latest/power');
+
+    return StreamBuilder<DatabaseEvent>(
+      stream: ref.onValue,
+      builder: (context, snapshot) {
+        bool isLive = false;
+
+        if (snapshot.hasData) {
+          final value = snapshot.data!.snapshot.value;
+
+          if (value is bool) {
+            isLive = value;
+          } else if (value != null) {
+            final s = value.toString().toLowerCase();
+            isLive = (s == "true" || s == "live" || s == "online");
+          }
+        }
+
+        final Color c = isLive ? accentGreen : Colors.red;
+
+        return Row(
+          children: [
+            Icon(Icons.circle, size: 8, color: c),
+            const SizedBox(width: 6),
+            Text(
+              isLive ? "Online" : "Offline",
+              style: TextStyle(
+                color: c,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }
@@ -307,38 +371,41 @@ class TopStatsRow extends StatelessWidget {
   }
 }
 
-/* -------------------- GPS Status -------------------- */
+/* -------------------- GPS Status (signal) -------------------- */
 class GpsStatus extends StatelessWidget {
   const GpsStatus({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final ref = FirebaseDatabase.instance.ref('devices/latest/power');
+    final ref = FirebaseDatabase.instance.ref('devices/latest/gpsStatus');
 
     return StreamBuilder<DatabaseEvent>(
       stream: ref.onValue,
       builder: (context, snapshot) {
-        bool isLive = false;
+        bool isOnline = false;
 
         if (snapshot.hasData) {
           final value = snapshot.data!.snapshot.value;
 
           if (value is bool) {
-            isLive = value;
+            isOnline = value;
+          } else if (value is num) {
+            isOnline = value != 0; // in case you store 1/0
           } else if (value != null) {
             final s = value.toString().toLowerCase();
-            isLive = (s == "true" || s == "live" || s == "online");
+            isOnline =
+                (s == "true" || s == "online" || s == "live" || s == "1");
           }
         }
 
-        final Color c = isLive ? accentGreen : Colors.red;
+        final Color c = isOnline ? accentGreen : Colors.red;
 
         return Row(
           children: [
             Icon(Icons.circle, size: 8, color: c),
             const SizedBox(width: 6),
             Text(
-              isLive ? "Live" : "Offline",
+              isOnline ? "Connected" : "No Signal",
               style: TextStyle(
                 color: c,
                 fontSize: 12,
@@ -423,7 +490,6 @@ class _BlueWavePulseState extends State<BlueWavePulse>
   }
 }
 
-/* -------------------- GPS CARD -------------------- */
 class GpsCard extends StatefulWidget {
   const GpsCard({super.key});
 
@@ -432,10 +498,22 @@ class GpsCard extends StatefulWidget {
 }
 
 class _GpsCardState extends State<GpsCard> {
-  // ✅ latest GPS position from Firebase
+  // Latest position used by the map/marker (smoothed)
   LatLng? _pos;
 
-  // marker icon
+  // Raw position (no smoothing) for computing bearing
+  LatLng? _rawPos;
+
+  // Smoothed state
+  LatLng? _smoothPos;
+
+  // Optional telemetry (if you upload these fields)
+  double? _hdop;
+  int? _sats;
+  double? _speedMps;
+  double _headingDeg = 0.0;
+
+  // Marker icon
   BitmapDescriptor? navIcon;
 
   // Map controller + pulse pixel position
@@ -445,14 +523,14 @@ class _GpsCardState extends State<GpsCard> {
   // Pulse settings (match BlueWavePulse maxRadius)
   static const double _pulseMaxRadius = 50;
 
-  // Small alignment tweak (your current tuning)
-  static const Offset _pulseCenterNudge = Offset(15, 0);
+  // ✅ No fixed pixel nudge; keep pulse truly locked to marker
+  static const Offset _pulseCenterNudge = Offset.zero;
 
   // Firebase
   late final DatabaseReference _gpsRef;
   StreamSubscription<DatabaseEvent>? _gpsSub;
 
-  // Behavior: recenter once until user touches map
+  // Behavior: recenter until user touches map
   bool _userInteracted = false;
   bool _didCenterOnce = false;
 
@@ -478,49 +556,44 @@ class _GpsCardState extends State<GpsCard> {
     return null;
   }
 
-  @override
-  void initState() {
-    super.initState();
+  // ----------------- geo helpers -----------------
+  double _haversineMeters(LatLng a, LatLng b) {
+    const r = 6371000.0; // Earth radius (m)
+    final dLat = (b.latitude - a.latitude) * (math.pi / 180.0);
+    final dLng = (b.longitude - a.longitude) * (math.pi / 180.0);
+    final lat1 = a.latitude * (math.pi / 180.0);
+    final lat2 = b.latitude * (math.pi / 180.0);
 
-    // Load custom nav icon
-    _loadMarkerBytes('assets/navigationIcon.png', _markerSize())
-        .then((bytes) {
-          if (!mounted) return;
-          setState(() => navIcon = BitmapDescriptor.fromBytes(bytes));
-        })
-        .catchError((e) => debugPrint("Marker icon load/resize failed: $e"));
+    final h =
+        math.sin(dLat / 2) * math.sin(dLat / 2) +
+        math.cos(lat1) *
+            math.cos(lat2) *
+            math.sin(dLng / 2) *
+            math.sin(dLng / 2);
 
-    // Listen to GPS from Firebase (NO hardcode)
-    _gpsRef = FirebaseDatabase.instance.ref('devices/latest');
-    _gpsSub = _gpsRef.onValue.listen((event) async {
-      final data = event.snapshot.value;
-      if (data is! Map) return;
-
-      final lat = _toNum(data['latitude']);
-      final lon = _toNum(data['longitude']);
-      if (lat == null || lon == null) return;
-
-      final newPos = LatLng(lat.toDouble(), lon.toDouble());
-
-      if (!mounted) return;
-      setState(() => _pos = newPos);
-
-      // Keep pulse synced (if map is ready)
-      await _updatePulsePosition(newPos);
-
-      // Center camera only once (until user touches map)
-      if (_mapCtrl != null && !_userInteracted && !_didCenterOnce) {
-        _didCenterOnce = true;
-        await _mapCtrl!.animateCamera(CameraUpdate.newLatLng(newPos));
-      }
-    });
+    final c = 2 * math.atan2(math.sqrt(h), math.sqrt(1 - h));
+    return r * c;
   }
 
-  @override
-  void dispose() {
-    _gpsSub?.cancel();
-    _mapCtrl?.dispose();
-    super.dispose();
+  LatLng _smooth(LatLng prev, LatLng next, double alpha) {
+    return LatLng(
+      prev.latitude + (next.latitude - prev.latitude) * alpha,
+      prev.longitude + (next.longitude - prev.longitude) * alpha,
+    );
+  }
+
+  double _bearingDeg(LatLng a, LatLng b) {
+    final lat1 = a.latitude * (math.pi / 180.0);
+    final lat2 = b.latitude * (math.pi / 180.0);
+    final dLng = (b.longitude - a.longitude) * (math.pi / 180.0);
+
+    final y = math.sin(dLng) * math.cos(lat2);
+    final x =
+        math.cos(lat1) * math.sin(lat2) -
+        math.sin(lat1) * math.cos(lat2) * math.cos(dLng);
+
+    final brng = math.atan2(y, x) * (180.0 / math.pi);
+    return (brng + 360.0) % 360.0;
   }
 
   // LatLng -> pixel position inside the map widget
@@ -536,9 +609,8 @@ class _GpsCardState extends State<GpsCard> {
       double dx = sc.x.toDouble() / dpr;
       double dy = sc.y.toDouble() / dpr;
 
-      // iOS sometimes reports coordinates in a different unit
+      // iOS sometimes reports in a different unit
       if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
-        // Try using raw values on iOS (this fixes “way off” for many setups)
         dx = sc.x.toDouble();
         dy = sc.y.toDouble();
       }
@@ -551,8 +623,111 @@ class _GpsCardState extends State<GpsCard> {
   }
 
   @override
+  void initState() {
+    super.initState();
+
+    // Load custom nav icon
+    _loadMarkerBytes('assets/navigationIcon.png', _markerSize())
+        .then((bytes) {
+          if (!mounted) return;
+          setState(() => navIcon = BitmapDescriptor.fromBytes(bytes));
+        })
+        .catchError((e) => debugPrint("Marker icon load/resize failed: $e"));
+
+    // Listen to GPS from Firebase
+    _gpsRef = FirebaseDatabase.instance.ref('devices/latest');
+
+    _gpsSub = _gpsRef.onValue.listen((event) async {
+      final data = event.snapshot.value;
+      if (data is! Map) return;
+
+      final lat = _toNum(data['latitude']);
+      final lon = _toNum(data['longitude']);
+      if (lat == null || lon == null) return;
+
+      final newRaw = LatLng(lat.toDouble(), lon.toDouble());
+
+      // Optional fields (only work if you upload them)
+      _hdop = _toNum(data['hdop'])?.toDouble();
+      _sats = _toNum(data['sats'])?.toInt();
+      final course = _toNum(data['course'])?.toDouble(); // 0..360
+
+      // ---- Quality gating (tune these) ----
+      // If you DON'T upload hdop/sats, these are null and won't block.
+      if (_sats != null && _sats! < 6) return;
+      if (_hdop != null && _hdop! > 2.8) return;
+
+      final prevRaw = _rawPos;
+      _rawPos = newRaw;
+
+      // ---- Ignore tiny jitter when standing still ----
+      // If we've already got a smoothed position, drop micro-moves.
+      if (_smoothPos != null) {
+        final dist = _haversineMeters(_smoothPos!, newRaw);
+
+        // Drop < 1.5m "wobble" (tune: 1.0 to 3.0)
+        if (dist < 1.5) return;
+      }
+
+      // ---- Adaptive smoothing (slower => more smoothing) ----
+      LatLng nextPos = newRaw;
+      if (_smoothPos != null) {
+        final speed = _speedMps ?? 0.0;
+
+        // More smoothing at low speed; less smoothing when moving faster
+        final alpha = (speed < 0.8) ? 0.15 : 0.35; // tune: 0.1..0.5
+        nextPos = _smooth(_smoothPos!, newRaw, alpha);
+      }
+
+      // ---- Heading ----
+      if (course != null) {
+        _headingDeg = course;
+      } else if (prevRaw != null) {
+        _headingDeg = _bearingDeg(prevRaw, newRaw);
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _smoothPos = nextPos;
+        _pos = nextPos;
+      });
+
+      // Keep pulse synced (if map is ready)
+      await _updatePulsePosition(nextPos);
+
+      // Center camera behavior
+      if (_mapCtrl != null && !_userInteracted) {
+        if (!_didCenterOnce) {
+          _didCenterOnce = true;
+          await _mapCtrl!.animateCamera(CameraUpdate.newLatLng(nextPos));
+        }
+        // Optional: uncomment to "follow" continuously when user hasn't touched map
+        // await _mapCtrl!.animateCamera(CameraUpdate.newLatLng(nextPos));
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _gpsSub?.cancel();
+    _mapCtrl?.dispose();
+    super.dispose();
+  }
+
+  String _accuracyText() {
+    // If you upload hdop/sats, show something meaningful; otherwise keep your default.
+    if (_hdop != null) {
+      // very rough rule of thumb; depends on receiver/environment
+      final approxMeters = (_hdop! * 5.0).clamp(3.0, 50.0);
+      return "±${approxMeters.toStringAsFixed(0)}m";
+    }
+    return "±5m";
+  }
+
+  @override
   Widget build(BuildContext context) {
     final pos = _pos;
+
     return GlassCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -578,7 +753,6 @@ class _GpsCardState extends State<GpsCard> {
               child: Stack(
                 children: [
                   if (pos == null)
-                    // ✅ No hardcode: show placeholder until Firebase gives coordinates
                     Container(
                       color: softBg,
                       alignment: Alignment.center,
@@ -596,23 +770,16 @@ class _GpsCardState extends State<GpsCard> {
                         ),
                         onMapCreated: (c) {
                           _mapCtrl = c;
-
-                          // wait one frame then compute pulse
                           WidgetsBinding.instance.addPostFrameCallback((_) {
                             _updatePulsePosition(pos);
                           });
                         },
-
                         onCameraMoveStarted: () {
-                          // user touched the map -> stop auto-centering
                           _userInteracted = true;
                         },
-
                         onCameraIdle: () {
-                          // when map settles, re-sync pulse
-                          _updatePulsePosition(pos);
+                          if (_pos != null) _updatePulsePosition(_pos!);
                         },
-
                         markers: {
                           Marker(
                             markerId: const MarkerId("source"),
@@ -624,18 +791,16 @@ class _GpsCardState extends State<GpsCard> {
                                 ),
                             anchor: const Offset(0.5, 0.5),
                             flat: true,
+                            rotation: _headingDeg, // ✅ rotate by heading/course
                           ),
                         },
-
                         zoomControlsEnabled: true,
                         compassEnabled: true,
                         mapToolbarEnabled: true,
-                        // ✅ allow pinch zoom
                         scrollGesturesEnabled: true,
                         zoomGesturesEnabled: true,
                         rotateGesturesEnabled: true,
                         tiltGesturesEnabled: false,
-                        // ✅ keep page scroll working, but don't block pinch
                         gestureRecognizers: {
                           Factory<OneSequenceGestureRecognizer>(
                             () => EagerGestureRecognizer(),
@@ -651,12 +816,12 @@ class _GpsCardState extends State<GpsCard> {
                       top: 12,
                       child: LiveCoordinatesBox(pos: pos),
                     ),
-                    const Positioned(
+                    Positioned(
                       right: 12,
                       top: 12,
                       child: _MiniInfoBox(
                         title: "Accuracy",
-                        value: "±5m",
+                        value: _accuracyText(),
                         valueColor: accentGreen,
                       ),
                     ),
@@ -713,8 +878,6 @@ class _GpsCardState extends State<GpsCard> {
   }
 }
 
-/* -------------------- Live Coordinates -------------------- */
-// ✅ No Firebase here anymore — it displays the SAME LatLng the map uses
 class LiveCoordinatesBox extends StatelessWidget {
   final LatLng pos;
   const LiveCoordinatesBox({super.key, required this.pos});
@@ -1326,8 +1489,7 @@ class MovementMonitorCard extends StatelessWidget {
           // Mini stats row
           Row(
             children: const [
-              Expanded(
-                child: ActivityStat()),
+              Expanded(child: ActivityStat()),
               SizedBox(width: 12),
               Expanded(
                 child: _MiniStat(
@@ -1337,8 +1499,7 @@ class MovementMonitorCard extends StatelessWidget {
                 ),
               ),
               SizedBox(width: 12),
-              Expanded(
-                child: StepCountStat()),
+              Expanded(child: StepCountStat()),
               SizedBox(width: 12),
               Expanded(
                 child: _MiniStat(title: "Distance", value: "6.2 km"),
@@ -1433,8 +1594,7 @@ class ActivityStat extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ref =
-        FirebaseDatabase.instance.ref('devices/latest/motion/state');
+    final ref = FirebaseDatabase.instance.ref('devices/latest/motion/state');
 
     return StreamBuilder<DatabaseEvent>(
       stream: ref.onValue,
@@ -1446,8 +1606,10 @@ class ActivityStat extends StatelessWidget {
         if (v != null) {
           state = v.toString();
 
-          if (state == "running") color = accentGreen;
-          else if (state == "walking") color = accentBlue;
+          if (state == "running")
+            color = accentGreen;
+          else if (state == "walking")
+            color = accentBlue;
         }
 
         return _MiniStat(
@@ -1467,8 +1629,9 @@ class StepCountStat extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ref =
-        FirebaseDatabase.instance.ref('devices/latest/motion/stepCount');
+    final ref = FirebaseDatabase.instance.ref(
+      'devices/latest/motion/stepCount',
+    );
 
     return StreamBuilder<DatabaseEvent>(
       stream: ref.onValue,
@@ -1480,15 +1643,11 @@ class StepCountStat extends StatelessWidget {
           steps = v.toInt().toString();
         }
 
-        return _MiniStat(
-          title: "Steps",
-          value: steps,
-        );
+        return _MiniStat(title: "Steps", value: steps);
       },
     );
   }
 }
-
 
 class _MiniStat extends StatelessWidget {
   final String title;
