@@ -19,6 +19,7 @@ double lastLat = 0;
 double lastLng = 0;
 unsigned long lastCalculationTime = 0;
 const long interval = 20000; 
+double totalDistanceMeters = 0;
 
 // New: Array to store last 25 speeds (in m/s)
 const int MAX_SPEED_HISTORY = 25;
@@ -95,6 +96,9 @@ void gpsRead(void) {
         // 1. Calculate distance in meters
         double distanceMeters = TinyGPSPlus::distanceBetween(currentLat, currentLng, lastLat, lastLng);
         
+        if (distanceMeters > 1.0) { // Ignore very small movements
+          totalDistanceMeters += distanceMeters;
+        }
         // 2. Calculate speed (m/s) -> (Distance / Time)
         // interval is in ms, so divide by 1000
         double speedKmh = (distanceMeters / (interval / 1000.0)) * 3.6; // Convert m/s to km/h
@@ -105,6 +109,9 @@ void gpsRead(void) {
         if (speedHistoryIndex == 0) {
           speedHistoryFull = true;
         }
+
+        Firebase.RTDB.setFloat(&fbdo, "/devices/latest/total_distance_meters", totalDistanceMeters);
+        Firebase.RTDB.setFloat(&fbdo, "/devices/latest/total_distance_km", totalDistanceMeters / 1000.0);
 
         // New: Upload the entire speed history array to Firebase
         FirebaseJson json;

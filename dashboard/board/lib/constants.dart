@@ -1292,6 +1292,30 @@ class SpeedLineChartPainter extends CustomPainter {
     }
 
     canvas.drawPath(path, paint);
+
+    // Draw speed labels
+    final textStyle = TextStyle(
+      color: Colors.white,
+      fontSize: 10,
+      fontWeight: FontWeight.bold,
+    );
+
+    for (int i = 0; i < dataToDraw.length; i++) {
+      final t = i / (dataToDraw.length - 1).toDouble();
+      final x = t * size.width;
+      final y = size.height - (dataToDraw[i] / maxSpeed) * size.height * 0.8;
+
+      final textSpan = TextSpan(
+        text: dataToDraw[i].toStringAsFixed(1),
+        style: textStyle,
+      );
+      final textPainter = TextPainter(
+        text: textSpan,
+        textDirection: TextDirection.ltr,
+      );
+      textPainter.layout();
+      textPainter.paint(canvas, Offset(x - textPainter.width / 2, y - textPainter.height - 5));
+    }
   }
 
   @override
@@ -1394,26 +1418,14 @@ class _MovementMonitorCardState extends State<MovementMonitorCard> {
 
           // Mini stats row
           Row(
-            children: const [
-              Expanded(
-                child: ActivityStat()),
-              SizedBox(width: 12),
-              Expanded(
-                child: _MiniStat(
-                  title: "Intensity",
-                  value: "High",
-                  valueColor: accentGreen,
-                ),
-              ),
-              SizedBox(width: 12),
-              Expanded(
-                child: StepCountStat()),
-              SizedBox(width: 12),
-              Expanded(
-                child: _MiniStat(title: "Distance", value: "6.2 km"),
-              ),
-            ],
-          ),
+            children: [
+            const Expanded(child: ActivityStat()),
+            const SizedBox(width: 12),
+            const Expanded(child: StepCountStat()),
+            const SizedBox(width: 12),
+            const Expanded(child: DistanceStat()),
+          ],
+        ),
           const SizedBox(height: 16),
 
           // Chart panel (placeholder)
@@ -1430,11 +1442,11 @@ class _MovementMonitorCardState extends State<MovementMonitorCard> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
-                      children: const [
-                        Icon(Icons.show_chart, color: accentBlue, size: 18),
-                        SizedBox(width: 8),
+                      children: [
+                        const Icon(Icons.show_chart, color: accentBlue, size: 18),
+                        const SizedBox(width: 8),
                         Text(
-                          "Speed History",
+                          "Speed History (KM/H)",
                           style: TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.w600,
@@ -1554,6 +1566,32 @@ class StepCountStat extends StatelessWidget {
   }
 }
 
+class DistanceStat extends StatelessWidget {
+  const DistanceStat({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final ref =
+        FirebaseDatabase.instance.ref('devices/latest/total_distance_meters');
+
+    return StreamBuilder<DatabaseEvent>(
+      stream: ref.onValue,
+      builder: (context, snapshot) {
+        String distance = "--";
+
+        final v = snapshot.data?.snapshot.value;
+        if (v is num) {
+          distance = v.toInt().toString();
+        }
+
+        return _MiniStat(
+          title: "Distance",
+          value: distance + " m",
+        );
+      },
+    );
+  }
+}
 
 class _MiniStat extends StatelessWidget {
   final String title;
