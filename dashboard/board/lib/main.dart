@@ -28,7 +28,6 @@ class MyApp extends StatelessWidget {
         tabletScaffold: const TabletScaffold(),
         desktopScaffold: const DesktopScaffold(),
       ),
-      // home: const LiveTrackingPage(),
     );
   }
 }

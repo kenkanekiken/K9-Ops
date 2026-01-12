@@ -19,6 +19,8 @@
 // const char* password = "Songbird7108";
 const char* ssid = "Jun Leis S23+";
 const char* password = "lmaoooooo";
+// const char* ssid = "kenkanekiken";
+// const char* password = "12345678";
 
 void wifiInit(void) {
   WiFi.begin(ssid, password);
@@ -53,6 +55,6 @@ void loop() {
   gpsRead();
   dhtRead();
   batteryRead();
-  // loraRead();
-  mpuRead();
+  //loraRead();
+  //mpuRead();
 }
