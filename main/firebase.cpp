@@ -19,15 +19,8 @@ void firebaseInit(void) {
   // Firebase config
   config.database_url = FIREBASE_HOST;
   config.signer.tokens.legacy_token = FIREBASE_AUTH; // legacy token / secret method
-
   Firebase.begin(&config, &auth);
   Firebase.reconnectWiFi(true);
   Serial.println("Firebase ready");
   delay(3000);
-  if (Firebase.RTDB.setString(&fbdo, "/devices/latest/power", true)) {
-    Serial.println("Power on/off uploaded OK");
-  } else {
-    Serial.print("Firebase error: ");
-    Serial.println(fbdo.errorReason());
-  }
 }
