@@ -6,7 +6,6 @@
 #include "mpu.h"
 #include "buzzer.h"
 #include "battery.h"
-#include "firebase.h"
 #include <WiFi.h>
 #include <Firebase_ESP_Client.h>
 
@@ -37,7 +36,6 @@ void wifiInit(void) {
 void setup() {
   Serial.begin(115200);
   wifiInit();
-  firebaseInit();
   pinMode(2, OUTPUT);
   pmicInit();
   gpsInit();
@@ -52,13 +50,8 @@ void setup() {
 void loop() {
   powerOff();
   // blink_led(2);
-  gpsRead();
+  batteryRead();
   dhtRead();
-  // batteryRead();
-  loraRead();
   mpuRead();
-  if (millis() - lastPacketMs > 10000) {
-    rxPower = false;
-    rxGpsOnline = false;
-  }
+  gpsRead();
 }

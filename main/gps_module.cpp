@@ -186,7 +186,7 @@ void gpsRead(void) {
             Serial.println(fbdo.errorReason());
           }
 
-          // Push speed log entry
+         // Push speed log entry
           String path = "/devices/latest/speed";
           FirebaseJson jsonSingle;
           jsonSingle.set("speed", speedKmh);
@@ -206,5 +206,5 @@ void gpsRead(void) {
       lastLng = currentLng;
       lastCalculationTime = currentMillis;
     }
-  }
+  } 
 }
