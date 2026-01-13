@@ -1581,24 +1581,15 @@ class _MovementMonitorCardState extends State<MovementMonitorCard> {
 
           // Mini stats row
           Row(
-            children: const [
-              Expanded(child: ActivityStat()),
-              SizedBox(width: 12),
-              Expanded(
-                child: _MiniStat(
-                  title: "Intensity",
-                  value: "High",
-                  valueColor: accentGreen,
-                ),
-              ),
-              SizedBox(width: 12),
-              Expanded(child: StepCountStat()),
-              SizedBox(width: 12),
-              Expanded(
-                child: _MiniStat(title: "Distance", value: "6.2 km"),
-              ),
-            ],
-          ),
+             children: [
+            const Expanded(child: ActivityStat()),
+            const SizedBox(width: 12),
+            const Expanded(child: StepCountStat()),
+            const SizedBox(width: 12),
+            const Expanded(child: DistanceStat()),
+          ],
+        ),
+
           const SizedBox(height: 16),
 
           // Chart panel (placeholder)
@@ -1733,6 +1724,31 @@ class StepCountStat extends StatelessWidget {
         }
 
         return _MiniStat(title: "Steps", value: steps);
+      },
+    );
+  }
+}
+
+class DistanceStat extends StatelessWidget {
+  const DistanceStat({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final ref = FirebaseDatabase.instance.ref(
+      'devices/latest/total_distance_meters',
+    );
+
+    return StreamBuilder<DatabaseEvent>(
+      stream: ref.onValue,
+      builder: (context, snapshot) {
+        String distance = "--";
+
+        final v = snapshot.data?.snapshot.value;
+        if (v is num) {
+          distance = v.toDouble().toStringAsFixed(1);
+        }
+
+        return _MiniStat(title: "Distance", value: "$distance /m");
       },
     );
   }
