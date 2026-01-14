@@ -1,11 +1,11 @@
 #include <Arduino.h>
 #include "battery.h"
-#include <Wire.h>
+#include <Wire.h>      
 #include <XPowersLib.h>
 #include "lora_module.h"   
 
-#define I2C_SDA   21
-#define I2C_SCL   22
+#define I2C_SDA 21
+#define I2C_SCL 22
 #define POWER_BTN 38
 
 XPowersAXP2101 PMU;
@@ -24,7 +24,7 @@ void batteryInit(void) {
 
   if (!PMU.begin(Wire, AXP2101_SLAVE_ADDRESS, I2C_SDA, I2C_SCL)) {
     Serial.println("AXP2101 init failed");
-    while (1) delay(1000);
+    while (1);
   }
 
   PMU.enableBattVoltageMeasure();
@@ -34,7 +34,7 @@ void batteryInit(void) {
 void batteryRead(void) {
   static uint32_t lastTime = 0;
 
-  if (millis() - lastTime >= 10000) { // 10s
+  if (millis() - lastTime >= 15000) { // 15s
     lastTime = millis();
 
     float vbat = PMU.getBattVoltage() / 1000.0f;
@@ -45,7 +45,7 @@ void batteryRead(void) {
 
     // Consider "power" as device is alive (true). You can redefine later.
     bool power = true;
-
+    
     Serial.printf("VBAT=%.3fV  %d%%  USB=%d  CHG=%d\n", vbat, pct, vbus, chg);
 
     // ✅ Send via LoRa

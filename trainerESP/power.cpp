@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include "battery.h"
+#include "power.h"
 #include <Wire.h>
 #include <XPowersLib.h>
 #include "firebase.h"
@@ -12,11 +12,10 @@
 extern FirebaseData fbdo;
 XPowersAXP2101 PMU;
 
-void batteryInit(void) {
+void powerInit(void) {
   pinMode(POWER_BTN, INPUT_PULLUP);
   Wire.begin(I2C_SDA, I2C_SCL);
   Wire.setClock(400000);
-  Serial.println("T-Beam v1.2 battery monitor ready");
 }
 
 void powerOff(void) {
@@ -32,8 +31,8 @@ void powerOff(void) {
   if (pressedAt && (millis() - pressedAt >= 2000)) {
     Serial.println("Powering off...");
     delay(50);
-    if (Firebase.RTDB.setBool(&fbdo, "/devices/latest/gpsStatus", false)) {
-      Serial.println("GPS offline uploaded OK");
+    if (Firebase.RTDB.setBool(&fbdo, "/devices/trainer/power", false)) {
+      Serial.println("Trainer offline uploaded OK");
     } else {
       Serial.print("Firebase error: ");
       Serial.println(fbdo.errorReason());

@@ -1,16 +1,12 @@
 #include <Arduino.h>
 #include "gps_module.h"
-
 // Enable GPS power and GPS decode
 #include <Wire.h>
-#include <axp20x.h>
 #include <TinyGPSPlus.h>
 #include <HardwareSerial.h>
-
 // LoRa sender (we will call loraSend)
 #include "lora_module.h"
 
-AXP20X_Class axp;
 TinyGPSPlus gps;
 HardwareSerial GPSSerial(1);   // UART1 for GPS
 
@@ -24,16 +20,23 @@ bool gpsOnline = false;
 
 // Send rate limit
 static uint32_t lastSend = 0;
-static const uint32_t SEND_MS = 1000; // send once per second
 
-void pmicInit(void) {
-  Wire.begin(21, 22);
-  axp.begin(Wire, 0x34);
-  axp.setPowerOutPut(AXP192_LDO2, AXP202_ON);
-  axp.setPowerOutPut(AXP192_LDO3, AXP202_ON);
-  axp.setPowerOutPut(AXP192_DCDC2, AXP202_ON);
-  axp.setPowerOutPut(AXP192_DCDC3, AXP202_ON);
-}
+// ---------- Distance / Speed ----------
+float lastLat = 0;
+float lastLng = 0;
+unsigned long lastCalculationTime = 0;
+float totalDistanceMeters = 0;
+float totalDistanceKm = 0;
+
+// Store last 25 speeds (km/h)
+const int MAX_SPEED_HISTORY = 25;
+double speedHistory[MAX_SPEED_HISTORY];
+int speedHistoryIndex = 0;
+bool speedHistoryFull = false;
+float speedKmh = 0;
+
+// Upload timing (prevent spamming)
+static uint32_t lastGpsUpload = 0;
 
 void gpsInit(void) {
   GPSSerial.begin(GPS_BAUD, SERIAL_8N1, GPS_RX_PIN, GPS_TX_PIN);
@@ -58,19 +61,54 @@ void gpsRead(void) {
 
   // 4) Debug print once per second
   static uint32_t lastPrint = 0;
-  if (millis() - lastPrint >= 1000) {
+  if (millis() - lastPrint >= 4000) { // Send every 4 second
     lastPrint = millis();
     Serial.printf("GPS Online: %s | Age(ms): %ld | Lat: %.6f | Lng: %.6f\n",
                   gpsOnline ? "YES" : "NO",
                   hasFix ? (long)ageMs : -1L,
                   lat, lng);
+    // send even if offline so trainer can show "offline"
+    loraSendGps(lat, lng);
+    loraSendGpsStatus(gpsOnline);
   }
 
   // 5) Send via LoRa once per second
-  if (millis() - lastSend < SEND_MS) return;
+  if (millis() - lastSend < 2000) return;
   lastSend = millis();
 
-  // send even if offline so trainer can show "offline"
-  loraSendGps(lat, lng);
-  loraSendGpsStatus(gpsOnline);
+  // =========================================================
+  // distance + speed history logic 
+  // =========================================================
+  unsigned long currentMillis = millis();
+
+  if (currentMillis - lastCalculationTime >= 20000) { // Send every 20 second
+    if (gps.location.isValid()) {
+      float currentLat = gps.location.lat();
+      float currentLng = gps.location.lng();
+
+      if (lastLat != 0 && lastLng != 0) {
+        float distanceMeters =
+            TinyGPSPlus::distanceBetween(currentLat, currentLng, lastLat, lastLng);
+
+        if (distanceMeters > 1.0) { // ignore tiny movements
+          totalDistanceMeters += distanceMeters;
+        }
+        totalDistanceKm = totalDistanceMeters / 1000.0;
+
+        // speed in km/h (distance over 20s)
+        speedKmh = (distanceMeters / (20000 / 1000.0)) * 3.6;
+
+        // Store speed history
+        speedHistory[speedHistoryIndex] = speedKmh;
+        speedHistoryIndex = (speedHistoryIndex + 1) % MAX_SPEED_HISTORY;
+        if (speedHistoryIndex == 0) speedHistoryFull = true;
+
+        loraSendVelocity(totalDistanceMeters, totalDistanceKm, speedKmh);
+      }
+      // Update last coords and time so next 20s calc works
+      lastLat = currentLat;
+      lastLng = currentLng;
+      lastCalculationTime = currentMillis;
+    }
+  }
 }

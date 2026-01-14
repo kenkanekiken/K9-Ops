@@ -2,7 +2,6 @@
 #include "DHTesp.h"
 #include "buzzer.h"
 #include "dht_module.h"
-
 #include "lora_module.h"   
 
 DHTesp dht;
@@ -17,7 +16,7 @@ void dhtInit(void) {
 void dhtRead(void) {
   static uint32_t lastTime = 0;
 
-  if (millis() - lastTime >= 2000) { // 5s
+  if (millis() - lastTime >= 10000) { // 10s
     lastTime = millis();
 
     auto data = dht.getTempAndHumidity();
