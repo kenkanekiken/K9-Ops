@@ -115,25 +115,33 @@ void handleJpg() {
 }
 
 void handleStream() {
+  char boundary[] = "frame";
   WiFiClient client = server.client();
 
-  client.print(
-    "HTTP/1.1 200 OK\r\n"
-    "Content-Type: multipart/x-mixed-replace; boundary=frame\r\n\r\n"
-  );
+  server.setContentLength(CONTENT_LENGTH_UNKNOWN);
+  
+  // ADDED THE CORS HEADER BELOW
+  server.sendContent("HTTP/1.1 200 OK\r\n"
+                     "Access-Control-Allow-Origin: *\r\n" // <--- CRITICAL LINE
+                     "Content-Type: multipart/x-mixed-replace; boundary=" + String(boundary) + "\r\n\r\n");
 
   while (client.connected()) {
     camera_fb_t* fb = esp_camera_fb_get();
-    if (!fb) continue;
+    if (!fb) {
+      delay(1);
+      continue;
+    }
 
-    client.print("--frame\r\n");
-    client.print("Content-Type: image/jpeg\r\n");
-    client.print("Content-Length: " + String(fb->len) + "\r\n\r\n");
+    String header = "--" + String(boundary) + "\r\n";
+    header += "Content-Type: image/jpeg\r\n";
+    header += "Content-Length: " + String(fb->len) + "\r\n\r\n";
+    
+    server.sendContent(header);
     client.write(fb->buf, fb->len);
-    client.print("\r\n");
+    server.sendContent("\r\n");
 
     esp_camera_fb_return(fb);
-    delay(30);   // prevents FB-OVF
+    delay(20); 
   }
 }
 
