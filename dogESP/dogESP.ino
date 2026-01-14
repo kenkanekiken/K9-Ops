@@ -8,19 +8,14 @@
 #include "battery.h"
 #include <WiFi.h>
 #include <Wire.h>
-#include <Firebase_ESP_Client.h>
 
-// Pin 25 DHT
-// Pin 14 buzzer
-// Pin 2 LED
-#define POWER_BTN 38   // example GPIO
 // ===== WiFi =====
-const char* ssid = "K&K";
-const char* password = "Songbird7108";
+// const char* ssid = "K&K";
+// const char* password = "Songbird7108";
 // const char* ssid = "Jun Leis S23+";
 // const char* password = "lmaoooooo";
-// const char* ssid = "kenkanekiken";
-// const char* password = "12345678";
+const char* ssid = "kenkanekiken";
+const char* password = "12345678";
 
 void wifiInit(void) {
   WiFi.begin(ssid, password);
@@ -34,21 +29,83 @@ void wifiInit(void) {
   Serial.println(WiFi.localIP());
 }
 
+// Long-press detector
+bool powerButtonLongPressed() {
+  static uint32_t pressedAt = 0;
+  bool pressed = (digitalRead(POWER_BTN) == LOW);
+
+  if (pressed && pressedAt == 0) pressedAt = millis();
+  if (!pressed) pressedAt = 0;
+
+  return (pressedAt && (millis() - pressedAt >= 2000));
+}
+
 void setup() {
   Serial.begin(115200);
-  wifiInit();
-  loraInit();
-  batteryInit();
-  gpsInit();
-  dhtInit();
-  mpuInit();
-  buzzerInit();
+
+  batteryInit();     
+  gpsInit();         
+  mpuInit();        
+  dhtInit();          
+  loraInit();   
+  // No Wifi init here   
+  pinMode(POWER_BTN, INPUT_PULLUP);
+  Serial.println("[DOG] Boot OK");     
 }
 
 void loop() {
-  powerOff();
-  batteryRead();
-  dhtRead();
-  mpuRead();
-  gpsRead();
+  // 1️⃣ Keep modules updated (always)
+  gpsUpdate();
+  batteryUpdate();
+  dhtUpdate();
+  mpuUpdate();
+
+  // 2️⃣ CHECK FOR SOFTWARE POWER-OFF (LONG PRESS YOU CONTROL)
+  if (powerButtonLongPressed()) {
+    // 🔥 Mark device as going offline
+    batteryPreparePowerOff();
+
+    // Take FINAL snapshots
+    BatterySnapshot battery = batteryGetSnapshot();
+    GpsSnapshot gps = gpsGetSnapshot();
+    MpuSnapshot mpu = mpuGetSnapshot();
+
+    // Send ONE LAST packet (alive = false inside battery snapshot)
+    loraSendSnapshot(
+      battery, gps,
+      dhtGetTemperature(),
+      mpu.ax, mpu.ay, mpu.az,
+      (int)mpu.motion,
+      mpu.state,
+      mpu.steps,
+      gps.speedKmh,
+      gps.totalDistanceMeters
+    );
+
+    delay(150);        // let LoRa finish TX
+    PMU.shutdown();    // 🔥 HARD POWER OFF (ESP32 dies here)
+
+    while (1) {}       // safety: should never reach here
+  }
+
+  // 3️⃣ NORMAL PERIODIC SEND (every 4s)
+  static uint32_t lastSend = 0;
+  if (millis() - lastSend >= 4000) {
+    lastSend = millis();
+
+    BatterySnapshot battery = batteryGetSnapshot();
+    GpsSnapshot gps = gpsGetSnapshot();
+    MpuSnapshot mpu = mpuGetSnapshot();
+
+    loraSendSnapshot(
+      battery, gps,
+      dhtGetTemperature(),
+      mpu.ax, mpu.ay, mpu.az,
+      (int)mpu.motion,
+      mpu.state,
+      mpu.steps,
+      gps.speedKmh,
+      gps.totalDistanceMeters
+    );
+  }
 }

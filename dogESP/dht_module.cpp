@@ -1,35 +1,35 @@
 #include <Arduino.h>
 #include "DHTesp.h"
-#include "buzzer.h"
 #include "dht_module.h"
-#include "lora_module.h"   
 
 DHTesp dht;
 const int DHT_PIN = 25;
 
-float temp = 0.0f;
+static float tempC = NAN;
 
 void dhtInit(void) {
   dht.setup(DHT_PIN, DHTesp::DHT11);
 }
 
-void dhtRead(void) {
+void dhtUpdate(void) {
   static uint32_t lastTime = 0;
 
-  if (millis() - lastTime >= 10000) { // 10s
+  if (millis() - lastTime >= 10000) { // 10s sampling
     lastTime = millis();
 
     auto data = dht.getTempAndHumidity();
 
-    if (isnan(data.temperature) || isnan(data.humidity)) {
-      Serial.println("Failed to read DHT11");
+    if (isnan(data.temperature)) {
+      Serial.println("[DHT] Read failed");
       return;
     }
 
-    temp = data.temperature;
-    Serial.printf("T=%.1fC  H=%.1f%%\n", data.temperature, data.humidity);
-
-    // ✅ Send temperature via LoRa
-    loraSendTemp(temp);
+    tempC = data.temperature;
+    Serial.printf("[DHT] T=%.1fC  H=%.1f%%\n",
+                  data.temperature, data.humidity);
   }
+}
+
+float dhtGetTemperature(void) {
+  return tempC;   // returns last valid reading
 }

@@ -20,6 +20,7 @@ void firebaseInit(void) {
   config.signer.tokens.legacy_token = FIREBASE_AUTH; // legacy token / secret method
   Firebase.begin(&config, &auth);
   Firebase.reconnectWiFi(true);
+  Firebase.RTDB.setBool(&fbdo, "/devices/trainer/power", true);
   Serial.println("Firebase ready");
   delay(3000);
 }
