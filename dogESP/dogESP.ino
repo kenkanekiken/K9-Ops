@@ -6,8 +6,8 @@
 #include "mpu.h"
 #include "buzzer.h"
 #include "battery.h"
-#include "firebase.h"
 #include <WiFi.h>
+#include <Wire.h>
 #include <Firebase_ESP_Client.h>
 
 // Pin 25 DHT
@@ -15,10 +15,10 @@
 // Pin 2 LED
 #define POWER_BTN 38   // example GPIO
 // ===== WiFi =====
-// const char* ssid = "K&K";
-// const char* password = "Songbird7108";
-const char* ssid = "Jun Leis S23+";
-const char* password = "lmaoooooo";
+const char* ssid = "K&K";
+const char* password = "Songbird7108";
+// const char* ssid = "Jun Leis S23+";
+// const char* password = "lmaoooooo";
 // const char* ssid = "kenkanekiken";
 // const char* password = "12345678";
 
@@ -37,24 +37,18 @@ void wifiInit(void) {
 void setup() {
   Serial.begin(115200);
   wifiInit();
-  firebaseInit();
-  pinMode(2, OUTPUT);
-  pmicInit();
+  loraInit();
+  batteryInit();
   gpsInit();
   dhtInit();
-  batteryInit();
-  loraInit();
-  bleInit();
   mpuInit();
   buzzerInit();
 }
 
 void loop() {
   powerOff();
-  // blink_led(2);
-  gpsRead();
-  dhtRead();
   batteryRead();
-  //loraRead();
-  //mpuRead();
+  dhtRead();
+  mpuRead();
+  gpsRead();
 }

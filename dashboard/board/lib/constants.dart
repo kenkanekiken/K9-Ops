@@ -141,7 +141,7 @@ class PowerStatus extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ref = FirebaseDatabase.instance.ref('devices/latest/power');
+    final ref = FirebaseDatabase.instance.ref('devices/dog/power');
 
     return StreamBuilder<DatabaseEvent>(
       stream: ref.onValue,
@@ -264,7 +264,7 @@ class TemperatureStatPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ref = FirebaseDatabase.instance.ref('devices/latest/temperature');
+    final ref = FirebaseDatabase.instance.ref('devices/dog/temperature');
 
     return StreamBuilder<DatabaseEvent>(
       stream: ref.onValue,
@@ -298,7 +298,7 @@ class BatteryStatPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ref = FirebaseDatabase.instance.ref('devices/latest/battery');
+    final ref = FirebaseDatabase.instance.ref('devices/dog/battery');
 
     return StreamBuilder<DatabaseEvent>(
       stream: ref.onValue,
@@ -378,7 +378,7 @@ class GpsStatus extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ref = FirebaseDatabase.instance.ref('devices/latest/gpsStatus');
+    final ref = FirebaseDatabase.instance.ref('devices/dog/gps/gpsOnline');
 
     return StreamBuilder<DatabaseEvent>(
       stream: ref.onValue,
@@ -636,7 +636,7 @@ class _GpsCardState extends State<GpsCard> {
         .catchError((e) => debugPrint("Marker icon load/resize failed: $e"));
 
     // Listen to GPS from Firebase
-    _gpsRef = FirebaseDatabase.instance.ref('devices/latest');
+    _gpsRef = FirebaseDatabase.instance.ref('devices/dog/gps');
 
     _gpsSub = _gpsRef.onValue.listen((event) async {
       final data = event.snapshot.value;
@@ -897,7 +897,7 @@ class GPSTemperature extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ref = FirebaseDatabase.instance.ref('devices/latest/temperature');
+    final ref = FirebaseDatabase.instance.ref('devices/dog/temperature');
 
     return StreamBuilder<DatabaseEvent>(
       stream: ref.onValue,
@@ -1430,7 +1430,9 @@ class SpeedLineChartPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     print('Painting with speeds: $speeds, size: $size');
-    List<double> dataToDraw = speeds.isNotEmpty ? speeds : [0, 5, 10, 8, 12, 6]; // Fallback fake data
+    List<double> dataToDraw = speeds.isNotEmpty
+        ? speeds
+        : [0, 5, 10, 8, 12, 6]; // Fallback fake data
     if (dataToDraw.isEmpty) return;
 
     final paint = Paint()
@@ -1446,7 +1448,9 @@ class SpeedLineChartPainter extends CustomPainter {
     for (int i = 0; i < dataToDraw.length; i++) {
       final t = i / (dataToDraw.length - 1).toDouble();
       final x = t * size.width;
-      final y = size.height - (dataToDraw[i] / maxSpeed) * size.height * 0.8; // Leave some margin
+      final y =
+          size.height -
+          (dataToDraw[i] / maxSpeed) * size.height * 0.8; // Leave some margin
 
       if (i == 0) {
         path.moveTo(x, y);
@@ -1478,7 +1482,10 @@ class SpeedLineChartPainter extends CustomPainter {
         textDirection: TextDirection.ltr,
       );
       textPainter.layout();
-      textPainter.paint(canvas, Offset(x - textPainter.width / 2, y - textPainter.height - 5));
+      textPainter.paint(
+        canvas,
+        Offset(x - textPainter.width / 2, y - textPainter.height - 5),
+      );
     }
   }
 
@@ -1487,45 +1494,6 @@ class SpeedLineChartPainter extends CustomPainter {
     return oldDelegate.speeds != speeds;
   }
 }
-
-/* -------------------- FAKE LINES ACCELEROMETER --------------------
-class _FakeLineChartPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    _drawWave(canvas, size, const Color(0xFF2DB7FF), 1.0);
-    _drawWave(canvas, size, const Color(0xFF2FE57A), 1.6);
-    _drawWave(canvas, size, const Color(0xFFFFA41B), 1.3);
-  }
-
-  void _drawWave(Canvas canvas, Size size, Color color, double freq) {
-    final paint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.2
-      ..color = color.withOpacity(0.95);
-
-    final path = Path();
-
-    for (int i = 0; i <= 60; i++) {
-      final t = i / 60.0;
-      final x = t * size.width;
-
-      // center line + wave
-      final y =
-          size.height * 0.55 + math.sin(t * 10 * freq) * size.height * 0.18;
-
-      if (i == 0) {
-        path.moveTo(x, y);
-      } else {
-        path.lineTo(x, y);
-      }
-    }
-
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-} */
 
 class MovementMonitorCard extends StatefulWidget {
   const MovementMonitorCard({super.key});
@@ -1540,21 +1508,26 @@ class _MovementMonitorCardState extends State<MovementMonitorCard> {
   @override
   void initState() {
     super.initState();
-    FirebaseDatabase.instance.ref('/devices/latest/speed_history_array').onValue.listen((event) {
-      final data = event.snapshot.value;
-      print('Firebase data received: $data');
-      if (data is Map) {
-        speedHistory = data.values.map((e) => (e as num).toDouble()).toList();
-        print('Parsed speedHistory from Map: $speedHistory');
-        setState(() {});
-      } else if (data is List) {
-        speedHistory = data.map((e) => (e as num).toDouble()).toList();
-        print('Parsed speedHistory from List: $speedHistory');
-        setState(() {});
-      } else {
-        print('Data is neither Map nor List: ${data.runtimeType}');
-      }
-    });
+    FirebaseDatabase.instance
+        .ref('/devices/latest/speed_history_array')
+        .onValue
+        .listen((event) {
+          final data = event.snapshot.value;
+          print('Firebase data received: $data');
+          if (data is Map) {
+            speedHistory = data.values
+                .map((e) => (e as num).toDouble())
+                .toList();
+            print('Parsed speedHistory from Map: $speedHistory');
+            setState(() {});
+          } else if (data is List) {
+            speedHistory = data.map((e) => (e as num).toDouble()).toList();
+            print('Parsed speedHistory from List: $speedHistory');
+            setState(() {});
+          } else {
+            print('Data is neither Map nor List: ${data.runtimeType}');
+          }
+        });
   }
 
   @override
@@ -1582,14 +1555,14 @@ class _MovementMonitorCardState extends State<MovementMonitorCard> {
 
           // Mini stats row
           Row(
-             children: [
-            const Expanded(child: ActivityStat()),
-            const SizedBox(width: 12),
-            const Expanded(child: StepCountStat()),
-            const SizedBox(width: 12),
-            const Expanded(child: DistanceStat()),
-          ],
-        ),
+            children: [
+              const Expanded(child: ActivityStat()),
+              const SizedBox(width: 12),
+              const Expanded(child: StepCountStat()),
+              const SizedBox(width: 12),
+              const Expanded(child: DistanceStat()),
+            ],
+          ),
 
           const SizedBox(height: 16),
 
@@ -1608,7 +1581,11 @@ class _MovementMonitorCardState extends State<MovementMonitorCard> {
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.show_chart, color: accentBlue, size: 18),
+                        const Icon(
+                          Icons.show_chart,
+                          color: accentBlue,
+                          size: 18,
+                        ),
                         const SizedBox(width: 8),
                         Text(
                           "Speed History (KM/H)",
@@ -1675,7 +1652,7 @@ class ActivityStat extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ref = FirebaseDatabase.instance.ref('devices/latest/motion/state');
+    final ref = FirebaseDatabase.instance.ref('devices/dog/movement/state');
 
     return StreamBuilder<DatabaseEvent>(
       stream: ref.onValue,
@@ -1710,9 +1687,7 @@ class StepCountStat extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ref = FirebaseDatabase.instance.ref(
-      'devices/latest/motion/stepCount',
-    );
+    final ref = FirebaseDatabase.instance.ref('devices/dog/movement/steps');
 
     return StreamBuilder<DatabaseEvent>(
       stream: ref.onValue,
