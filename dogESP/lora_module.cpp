@@ -97,6 +97,21 @@ void loraSendMovement(float ax, float ay, float az, float motion, const String& 
   );
 }
 
+void loraSendVelocity(float distance_in_meter, float distance_in_km, float speed) {
+  LoRa.beginPacket();
+  LoRa.print("Velocity,");
+  LoRa.print(distance_in_meter, 2); LoRa.print(",");
+  LoRa.print(distance_in_km, 2); LoRa.print(",");
+  LoRa.print(speed, 2);
+  LoRa.endPacket();
+
+  // Debug
+  Serial.printf(
+    "LoRa TX: Movement,%.2f,%.2f,%.2f\n",
+    distance_in_meter, distance_in_km, speed
+  );
+}
+
 // void loraRead(void) {
 //   static int counter = 0;
 //   static uint32_t lastTime = 0;

@@ -1,6 +1,5 @@
 #pragma once
 #include <stdint.h>
 
-void batteryInit(void);
-void batteryRead(void);
+void powerInit(void);
 void powerOff(void);

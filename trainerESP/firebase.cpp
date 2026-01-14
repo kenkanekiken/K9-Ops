@@ -9,7 +9,6 @@
 #define FIREBASE_HOST "https://k9ops-2f11f-default-rtdb.asia-southeast1.firebasedatabase.app/" //FoundboxSG@gmail.com
 #define FIREBASE_AUTH "BcwrEh7pDkIQteADlGTUzTMOmN9cfCakqbTghhi1"
 
-
 // Firebase objects
 FirebaseData fbdo;
 FirebaseAuth auth;

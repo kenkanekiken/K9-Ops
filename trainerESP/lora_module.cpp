@@ -16,6 +16,9 @@ extern FirebaseData fbdo;
 #define LORA_RST   23
 #define LORA_DIO0  26   // if no packets later, try 33
 
+// Firebase base path you want
+static const char* DOG_BASE = "/devices/dog";
+
 // ---------- Latest received values ----------
 float rxLat = 0.0f;
 float rxLng = 0.0f;
@@ -30,11 +33,15 @@ float rxMotion = 0.0f;
 String rxState = "Unknown";
 int   rxSteps = 0;
 
+float rxMeter = 0.0f;
+float rxKm = 0.0f;
+float rxSpeed = 0.0f;
+
 uint32_t lastPacketMs = 0;
 
 // Upload rate-limit
 static uint32_t lastFirebaseUpload = 0;
-static const uint32_t FIREBASE_UPLOAD_MS = 300; // don’t spam
+static const uint32_t FIREBASE_UPLOAD_MS = 250; // don’t spam too hard
 
 // CSV token helper
 static String tokenAt(const String& s, int index) {
@@ -50,36 +57,44 @@ static String tokenAt(const String& s, int index) {
   return "";
 }
 
-// Upload current "latest" state to Firebase as one atomic update
-static void uploadLatestToFirebase() {
+// Upload current state to Firebase at /devices/dog/*
+static void uploadDogToFirebase() {
   if (!Firebase.ready()) return;
   if (millis() - lastFirebaseUpload < FIREBASE_UPLOAD_MS) return;
   lastFirebaseUpload = millis();
 
-  FirebaseJson json;
+  FirebaseJson update;
 
-  // Always include what we have; adjust if you want “only upload when updated”
-  json.set("temperature", rxTemp);
-  json.set("battery", rxPct);
-  json.set("power", rxPower);
-  json.set("gpsStatus", rxGpsOnline);
-  json.set("ax", rxAx);
-  json.set("ay", rxAy);
-  json.set("az", rxAz);
-  json.set("motion", rxMotion);
-  json.set("state", rxState);
-  json.set("steps", rxSteps);
+  // /devices/dog/temperature
+  update.set("temperature", rxTemp);
 
-  // Only upload lat/lng if GPS is online (prevents pushing 0,0)
+  // /devices/dog/battery , /devices/dog/power
+  update.set("battery", rxPct);
+  update.set("power", rxPower);
+
+  // /devices/dog/gps/*
+  update.set("gps/gpsOnline", rxGpsOnline);
   if (rxGpsOnline) {
-    json.set("latitude", rxLat);
-    json.set("longitude", rxLng);
+    update.set("gps/latitude", rxLat);
+    update.set("gps/longitude", rxLng);
+    // /devices/dog/velocity/*
+    update.set("velocity/distanceMeter", rxMeter);
+    update.set("velocity/distanceKm", rxKm);
+    update.set("velocity/speed", rxSpeed);
   }
 
-  if (Firebase.RTDB.updateNode(&fbdo, "/devices/latest", &json)) {
-    // Serial.println("[FB] latest updated");
+  // /devices/dog/movement/*
+  update.set("movement/ax", rxAx);
+  update.set("movement/ay", rxAy);
+  update.set("movement/az", rxAz);
+  update.set("movement/motion", rxMotion);
+  update.set("movement/state", rxState);
+  update.set("movement/steps", rxSteps);
+
+  if (Firebase.RTDB.updateNode(&fbdo, DOG_BASE, &update)) {
+    Serial.println("[Firebase] /devices/dog updated");
   } else {
-    Serial.print("[FB] update failed: ");
+    Serial.print("[Firebase] update failed: ");
     Serial.println(fbdo.errorReason());
   }
 }
@@ -92,46 +107,41 @@ static void handleMessage(const String& msg) {
   if (type == "Temperature") {
     rxTemp = tokenAt(msg, 1).toFloat();
     Serial.printf("[RX] Temp = %.1f C\n", rxTemp);
-
-    uploadLatestToFirebase();
+    uploadDogToFirebase();
     return;
   }
 
   if (type == "Power") {
     rxPower = tokenAt(msg, 1).toInt() == 1;
     Serial.printf("[RX] Power = %d\n", rxPower ? 1 : 0);
-
-    uploadLatestToFirebase();
+    uploadDogToFirebase();
     return;
   }
 
   if (type == "Battery") {
     rxPct = tokenAt(msg, 1).toInt();
     Serial.printf("[RX] Battery = %d%%\n", rxPct);
-
-    uploadLatestToFirebase();
+    uploadDogToFirebase();
     return;
   }
 
+  // GPS,<lat>,<lng>
   if (type == "GPS") {
     rxLat = tokenAt(msg, 1).toFloat();
     rxLng = tokenAt(msg, 2).toFloat();
-
-    Serial.printf("[RX] GPS lat=%.6f lng=%.6f\n",
-                  rxLat, rxLng);
-
-    uploadLatestToFirebase();
+    Serial.printf("[RX] GPS lat=%.6f lng=%.6f\n", rxLat, rxLng);
+    uploadDogToFirebase();
     return;
   }
 
+  // GPSStatus,<0/1>
   if (type == "GPSStatus") {
     rxGpsOnline = tokenAt(msg, 1).toInt() == 1;
     Serial.printf("[RX] GPS online = %d\n", rxGpsOnline ? 1 : 0);
-
-    uploadLatestToFirebase();
+    uploadDogToFirebase();
     return;
   }
-  
+
   // Movement,<ax>,<ay>,<az>,<motion>,<state>,<steps>
   if (type == "Movement") {
     rxAx = tokenAt(msg, 1).toFloat();
@@ -141,9 +151,23 @@ static void handleMessage(const String& msg) {
     rxState = tokenAt(msg, 5);
     rxSteps = tokenAt(msg, 6).toInt();
 
-    Serial.printf("[RX] Move ax=%.3f ay=%.3f az=%.3f motion=%.3f state=%s steps=%d\n", rxAx, rxAy, rxAz, rxMotion, rxState.c_str(), rxSteps);
+    Serial.printf("[RX] Movement ax=%.3f ay=%.3f az=%.3f motion=%.3f state=%s steps=%d\n",
+                  rxAx, rxAy, rxAz, rxMotion, rxState.c_str(), rxSteps);
 
-    uploadLatestToFirebase();
+    uploadDogToFirebase();
+    return;
+  }
+
+  // Velocity,<Meter>,<Km>,<Speed>
+  if (type == "Velocity") {
+    rxMeter = tokenAt(msg, 1).toFloat();
+    rxKm = tokenAt(msg, 2).toFloat();
+    rxSpeed = tokenAt(msg, 3).toFloat();
+
+    Serial.printf("[RX] Velocity Meter=%.2f Km=%.2f Speed=%.2f\n",
+                  rxMeter, rxKm, rxSpeed);
+
+    uploadDogToFirebase();
     return;
   }
 
@@ -177,6 +201,5 @@ void loraRead(void) {
 
   handleMessage(msg);
 
-  // Optional signal quality
   Serial.printf("RSSI=%d, SNR=%.1f\n", LoRa.packetRssi(), LoRa.packetSnr());
 }
