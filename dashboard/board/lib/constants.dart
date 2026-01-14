@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:async';
 import 'package:flutter/gestures.dart';
+import 'package:mjpeg_stream/mjpeg_stream.dart';
 
 final isWeb = kIsWeb;
 
@@ -837,8 +838,8 @@ class _GpsCardState extends State<GpsCard> {
                             _pulseMaxRadius,
                         child: IgnorePointer(
                           child: BlueWavePulse(
-                            child: const SizedBox.shrink(),
                             maxRadius: _pulseMaxRadius,
+                            child: const SizedBox.shrink(),
                           ),
                         ),
                       ),
@@ -1686,9 +1687,9 @@ class ActivityStat extends StatelessWidget {
         if (v != null) {
           state = v.toString();
 
-          if (state == "running")
+          if (state == "running") {
             color = accentGreen;
-          else if (state == "walking")
+          } else if (state == "walking")
             color = accentBlue;
         }
 
@@ -1816,8 +1817,16 @@ class _LegendDot extends StatelessWidget {
 }
 
 /* -------------------- FOOTAGE VIEWER (RIGHT) -------------------- */
-class FootageViewerCard extends StatelessWidget {
+class FootageViewerCard extends StatefulWidget {
   const FootageViewerCard({super.key});
+
+  @override
+  _FootageViewerCardState createState() => _FootageViewerCardState();
+}
+
+class _FootageViewerCardState extends State<FootageViewerCard> {
+  // NOTICE: The _streamKey and _refreshStream logic is gone. 
+  // The MjpegStream widget handles the "live" updates automatically.
 
   @override
   Widget build(BuildContext context) {
@@ -1835,121 +1844,42 @@ class FootageViewerCard extends StatelessWidget {
                 children: [
                   Text("Footage Viewer", style: titleStyle()),
                   const SizedBox(height: 2),
-                  Text("Captured video evidence", style: labelStyle()),
+                  Text("Live video stream", style: labelStyle()),
                 ],
               ),
             ],
           ),
           const SizedBox(height: 16),
 
-          // Main video preview (placeholder)
+          // Main video preview (live stream)
           Expanded(
             child: Container(
+              width: double.infinity,
               decoration: BoxDecoration(
-                color: softBg,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: cardBorder),
+                color: Colors.black,
+                borderRadius: BorderRadius.circular(8),
               ),
-              child: Stack(
-                children: [
-                  // fake thumbnail gradient
-                  Positioned.fill(
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(16),
-                        gradient: const LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [Color(0xFF2A3448), Color(0xFF0E1727)],
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  // play button
-                  Center(
-                    child: Container(
-                      width: 64,
-                      height: 64,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.black.withOpacity(0.25),
-                        border: Border.all(
-                          color: Colors.white.withOpacity(0.30),
-                        ),
-                      ),
-                      child: const Icon(
-                        Icons.play_arrow_rounded,
-                        color: Colors.white,
-                        size: 34,
-                      ),
-                    ),
-                  ),
-
-                  // bottom left text
-                  Positioned(
-                    left: 14,
-                    bottom: 14,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
-                        Text(
-                          "Motion Detected",
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        SizedBox(height: 3),
-                        Text(
-                          "2025-12-11 14:32",
-                          style: TextStyle(color: mutedText, fontSize: 12),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  // duration + download (bottom right)
-                  Positioned(
-                    right: 14,
-                    bottom: 14,
-                    child: Row(
-                      children: [
-                        const Text(
-                          "2:15",
-                          style: TextStyle(color: Colors.white, fontSize: 12),
-                        ),
-                        const SizedBox(width: 10),
-                        Container(
-                          width: 34,
-                          height: 34,
-                          decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.25),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(
-                              color: Colors.white.withOpacity(0.20),
-                            ),
-                          ),
-                          child: const Icon(
-                            Icons.download_rounded,
-                            color: Colors.white,
-                            size: 18,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+              clipBehavior: Clip.antiAlias,
+              // NEW IMPROVED STREAMER
+              child: MJPEGStreamScreen (
+                streamUrl: 'http://192.168.1.8/stream',
+                timeout: const Duration(seconds: 100),
+                showLiveIcon: true,
+                width: double.infinity,
+                height: double.infinity,             // Set to infinity to fill the Expanded container
+                borderRadius: 8,                     // Matches your GlassCard aesthetics
+                showLogs: true,                      // Helpful for debugging the connection
+                fit: BoxFit.cover,
               ),
             ),
           ),
 
           const SizedBox(height: 14),
 
-          // Recent captures row
+          // Recent captures row (Remains the same)
           Row(
             children: const [
-              Icon(Icons.calendar_month_outlined, color: accentBlue, size: 18),
+              Icon(Icons.calendar_month_outlined, color: Colors.blueAccent, size: 18), // Used accentBlue variable if defined
               SizedBox(width: 8),
               Text(
                 "Recent Captures",
