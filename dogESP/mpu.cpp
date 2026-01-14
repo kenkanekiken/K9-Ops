@@ -2,7 +2,6 @@
 #include <math.h>
 #include <Wire.h>
 
-#include "lora_module.h"
 #include "mpu.h"
 
 // ================= CONFIG =================
@@ -10,19 +9,19 @@
 #define PWR_MGMT_1     0x6B
 #define ACCEL_XOUT_H   0x3B
 
-#define STEP_THRESHOLD      0.15f   // g
-#define MIN_STEP_INTERVAL   200     // ms
-#define MPU_UPLOAD_MS       1000    // send once per 1s
+#define STEP_THRESHOLD      0.15f
+#define MIN_STEP_INTERVAL   200
 
-static String state = "unknown";
 static unsigned long lastStepTime = 0;
-static int stepCount = 0;
+static long stepCount = 0;
 static bool aboveThreshold = false;
-static uint32_t lastUploadTime = 0;
 
-// Optional: if MPU disappears, don’t spam I2C forever
+// Recover handling
 static bool mpuOk = false;
 static uint32_t lastRecoverTry = 0;
+
+// cached snapshot
+static MpuSnapshot snap = {false, 0,0,0, 0, MPU_UNKNOWN, 0};
 
 // ================= LOW LEVEL I2C =================
 static bool mpuWrite(uint8_t reg, uint8_t data) {
@@ -48,58 +47,55 @@ static bool mpuReadAccelRaw(int16_t &ax, int16_t &ay, int16_t &az) {
 }
 
 static bool mpuRecoverIfNeeded() {
-  // try recover at most once per 2s
   if (millis() - lastRecoverTry < 2000) return false;
   lastRecoverTry = millis();
 
-  // Wake MPU
   bool ok = mpuWrite(PWR_MGMT_1, 0x00);
   if (!ok) {
-    Serial.println("MPU recover failed (no ACK)");
+    Serial.println("[MPU] recover failed (no ACK)");
     return false;
   }
 
-  // quick sanity read
   int16_t ax, ay, az;
   ok = mpuReadAccelRaw(ax, ay, az);
-  if (ok) Serial.println("MPU recovered OK");
+  if (ok) Serial.println("[MPU] recovered OK");
   return ok;
 }
 
 // ================= SETUP =================
 void mpuInit(void) {
-  // IMPORTANT: Wire.begin() must already be called in setup() ONCE.
-  // Example in main:
-  //   Wire.begin(21,22); Wire.setClock(400000); Wire.setTimeOut(50);
-
   mpuOk = mpuWrite(PWR_MGMT_1, 0x00);
   if (!mpuOk) {
-    Serial.println("MPU6050 init failed (no ACK). Check wiring/power/address.");
+    Serial.println("[MPU] init failed (no ACK). Check wiring/power/address.");
+    snap.ok = false;
+    snap.state = MPU_UNKNOWN;
     return;
   }
 
-  // do one read to confirm
   int16_t ax, ay, az;
   mpuOk = mpuReadAccelRaw(ax, ay, az);
-  Serial.println(mpuOk ? "MPU6050 ACCEL READY" : "MPU6050 read failed on init");
+  Serial.println(mpuOk ? "[MPU] READY" : "[MPU] read failed on init");
+
+  snap.ok = mpuOk;
+  snap.state = mpuOk ? MPU_STATIONARY : MPU_UNKNOWN; // start as stationary if alive
 }
 
 // ================= LOOP =================
-void mpuRead(void) {
+void mpuUpdate(void) {
   if (!mpuOk) {
-    // try recover sometimes
     mpuOk = mpuRecoverIfNeeded();
+    snap.ok = mpuOk;
     return;
   }
 
   int16_t axRaw, ayRaw, azRaw;
   if (!mpuReadAccelRaw(axRaw, ayRaw, azRaw)) {
-    Serial.println("MPU read failed -> mark offline");
+    Serial.println("[MPU] read failed -> offline");
     mpuOk = false;
+    snap.ok = false;
     return;
   }
 
-  // ±2g scale: 16384 LSB per g
   float ax = axRaw / 16384.0f;
   float ay = ayRaw / 16384.0f;
   float az = azRaw / 16384.0f;
@@ -107,9 +103,10 @@ void mpuRead(void) {
   float magnitude = sqrtf(ax * ax + ay * ay + az * az);
   float motion = fabsf(magnitude - 1.0f);
 
-  if (motion < 0.05f) state = "stationary";
-  else if (motion < 0.25f) state = "walking";
-  else state = "running";
+  int state = MPU_UNKNOWN;
+  if (motion < 0.05f) state = MPU_STATIONARY;
+  else if (motion < 0.25f) state = MPU_WALKING;
+  else state = MPU_RUNNING;
 
   unsigned long now = millis();
 
@@ -125,16 +122,16 @@ void mpuRead(void) {
     aboveThreshold = false;
   }
 
-  // Rate-limit LoRa TX
-  if (now - lastUploadTime >= 1000) {
-    lastUploadTime = now;
+  // update snapshot
+  snap.ok = true;
+  snap.ax = ax;
+  snap.ay = ay;
+  snap.az = az;
+  snap.motion = motion;
+  snap.state = state;
+  snap.steps = stepCount;
+}
 
-    // ✅ FIXED printf: format matches arguments
-    Serial.printf(
-      "MPU ax=%.3f ay=%.3f az=%.3f motion=%.3f state=%s steps=%d\n",
-      ax, ay, az, motion, state.c_str(), stepCount
-    );
-
-    loraSendMovement(ax, ay, az, motion, state, stepCount);
-  }
+MpuSnapshot mpuGetSnapshot(void) {
+  return snap;
 }

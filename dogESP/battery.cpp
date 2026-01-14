@@ -1,15 +1,18 @@
 #include <Arduino.h>
+#include <Wire.h>
+#include <XPowersLib.h>   // 🔥 REQUIRED
 #include "battery.h"
-#include <Wire.h>      
-#include <XPowersLib.h>
-#include "lora_module.h"   
 
 #define I2C_SDA 21
 #define I2C_SCL 22
-#define POWER_BTN 38
 
 XPowersAXP2101 PMU;
-int pct = 0;
+static bool pmuReady = false;
+
+// cached snapshot
+static BatterySnapshot snap = {
+  0.0f, 0, false, false, true
+};
 
 int batteryPercentFromVoltage(float v) {
   if (v >= 4.20f) return 100;
@@ -17,57 +20,50 @@ int batteryPercentFromVoltage(float v) {
   return (int)((v - 3.30f) / (4.20f - 3.30f) * 100.0f + 0.5f);
 }
 
-void batteryInit(void) {
+void batteryInit() {
+  if (pmuReady) return;
+
   pinMode(POWER_BTN, INPUT_PULLUP);
   Wire.begin(I2C_SDA, I2C_SCL);
   Wire.setClock(400000);
 
   if (!PMU.begin(Wire, AXP2101_SLAVE_ADDRESS, I2C_SDA, I2C_SCL)) {
     Serial.println("AXP2101 init failed");
-    while (1);
+    while (1) delay(1000);
   }
 
   PMU.enableBattVoltageMeasure();
-  Serial.println("T-Beam v1.2 battery monitor ready");
+  pmuReady = true;
 }
 
-void batteryRead(void) {
+void batteryUpdate(void) {
   static uint32_t lastTime = 0;
 
-  if (millis() - lastTime >= 15000) { // 15s
+  if (millis() - lastTime >= 15000) {
     lastTime = millis();
 
-    float vbat = PMU.getBattVoltage() / 1000.0f;
-    pct = batteryPercentFromVoltage(vbat);
+    snap.voltage  = PMU.getBattVoltage() / 1000.0f;
+    snap.percent  = batteryPercentFromVoltage(snap.voltage);
+    snap.vbus     = PMU.isVbusIn();
+    snap.charging = PMU.isCharging();
+    snap.alive    = true;
 
-    bool vbus = PMU.isVbusIn();
-    bool chg  = PMU.isCharging();
-
-    // Consider "power" as device is alive (true). You can redefine later.
-    bool power = true;
-    
-    Serial.printf("VBAT=%.3fV  %d%%  USB=%d  CHG=%d\n", vbat, pct, vbus, chg);
-
-    // ✅ Send via LoRa
-    loraSendBattery(pct);
+    Serial.printf("[BAT] %.3fV  %d%%  USB=%d  CHG=%d\n",
+                  snap.voltage, snap.percent,
+                  snap.vbus, snap.charging);
   }
 }
 
-void powerOff(void) {
-  static uint32_t pressedAt = 0;
-  bool pressed = (digitalRead(POWER_BTN) == LOW);
+void batteryPreparePowerOff(void) {
+  // mark device as going offline
+  snap.alive = false;
 
-  if (pressed && pressedAt == 0) pressedAt = millis();
-  if (!pressed) pressedAt = 0;
+  Serial.println("[BAT] prepare power off (alive=false)");
 
-  if (pressedAt && (millis() - pressedAt >= 2000)) {
-    Serial.println("Powering off...");
+  // short delay so main loop can send final packet
+  delay(50);
+}
 
-    // Send a final packet: power = 0
-    loraSendPower(false); // Power status off
-    loraSendGpsStatus(false); // GPS status off 
-
-    delay(80); // small delay so packet can finish TX
-    PMU.shutdown();
-  }
+BatterySnapshot batteryGetSnapshot(void) {
+  return snap;
 }

@@ -134,13 +134,13 @@ class DashboardHeader extends StatelessWidget {
   }
 }
 
-/* -------------------- GPS Status -------------------- */
+/* -------------------- Power Status -------------------- */
 class PowerStatus extends StatelessWidget {
   const PowerStatus({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final ref = FirebaseDatabase.instance.ref('devices/dog/power');
+    final ref = FirebaseDatabase.instance.ref('devices/dog/alive');
 
     return StreamBuilder<DatabaseEvent>(
       stream: ref.onValue,
@@ -152,9 +152,11 @@ class PowerStatus extends StatelessWidget {
 
           if (value is bool) {
             isLive = value;
+          } else if (value is num) {
+            isLive = value != 0;
           } else if (value != null) {
             final s = value.toString().toLowerCase();
-            isLive = (s == "true" || s == "live" || s == "online");
+            isLive = (s == "true" || s == "live" || s == "online" || s == "1");
           }
         }
 
@@ -263,7 +265,7 @@ class TemperatureStatPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ref = FirebaseDatabase.instance.ref('devices/dog/temperature');
+    final ref = FirebaseDatabase.instance.ref('devices/dog/temperature/c');
 
     return StreamBuilder<DatabaseEvent>(
       stream: ref.onValue,
@@ -297,7 +299,7 @@ class BatteryStatPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ref = FirebaseDatabase.instance.ref('devices/dog/battery');
+    final ref = FirebaseDatabase.instance.ref('devices/dog/battery/percent');
 
     return StreamBuilder<DatabaseEvent>(
       stream: ref.onValue,
@@ -377,7 +379,7 @@ class GpsStatus extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ref = FirebaseDatabase.instance.ref('devices/dog/gps/gpsOnline');
+    final ref = FirebaseDatabase.instance.ref('devices/dog/gps/online');
 
     return StreamBuilder<DatabaseEvent>(
       stream: ref.onValue,
@@ -641,8 +643,8 @@ class _GpsCardState extends State<GpsCard> {
       final data = event.snapshot.value;
       if (data is! Map) return;
 
-      final lat = _toNum(data['latitude']);
-      final lon = _toNum(data['longitude']);
+      final lat = _toNum(data['lat']);
+      final lon = _toNum(data['lng']);
       if (lat == null || lon == null) return;
 
       final newRaw = LatLng(lat.toDouble(), lon.toDouble());
@@ -1507,26 +1509,27 @@ class _MovementMonitorCardState extends State<MovementMonitorCard> {
   @override
   void initState() {
     super.initState();
-    FirebaseDatabase.instance
-        .ref('/devices/latest/speed_history_array')
-        .onValue
-        .listen((event) {
-          final data = event.snapshot.value;
-          print('Firebase data received: $data');
-          if (data is Map) {
-            speedHistory = data.values
-                .map((e) => (e as num).toDouble())
-                .toList();
-            print('Parsed speedHistory from Map: $speedHistory');
-            setState(() {});
-          } else if (data is List) {
-            speedHistory = data.map((e) => (e as num).toDouble()).toList();
-            print('Parsed speedHistory from List: $speedHistory');
-            setState(() {});
-          } else {
-            print('Data is neither Map nor List: ${data.runtimeType}');
-          }
-        });
+
+    FirebaseDatabase.instance.ref('devices/dog/move/speed').onValue.listen((
+      event,
+    ) {
+      final v = event.snapshot.value;
+
+      num? speed;
+      if (v is num)
+        speed = v;
+      else if (v is String)
+        speed = num.tryParse(v);
+
+      if (speed == null) return;
+
+      setState(() {
+        speedHistory.add(speed!.toDouble());
+        if (speedHistory.length > 30) {
+          speedHistory.removeAt(0); // keep last 30 points
+        }
+      });
+    });
   }
 
   @override
@@ -1651,7 +1654,7 @@ class ActivityStat extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ref = FirebaseDatabase.instance.ref('devices/dog/movement/state');
+    final ref = FirebaseDatabase.instance.ref('devices/dog/imu/stateText');
 
     return StreamBuilder<DatabaseEvent>(
       stream: ref.onValue,
@@ -1686,7 +1689,7 @@ class StepCountStat extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ref = FirebaseDatabase.instance.ref('devices/dog/movement/steps');
+    final ref = FirebaseDatabase.instance.ref('devices/dog/imu/steps');
 
     return StreamBuilder<DatabaseEvent>(
       stream: ref.onValue,
@@ -1709,9 +1712,7 @@ class DistanceStat extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ref = FirebaseDatabase.instance.ref(
-      'devices/latest/total_distance_meters',
-    );
+    final ref = FirebaseDatabase.instance.ref('devices/dog/move/distance');
 
     return StreamBuilder<DatabaseEvent>(
       stream: ref.onValue,
