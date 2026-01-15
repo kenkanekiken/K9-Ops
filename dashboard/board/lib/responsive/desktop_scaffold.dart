@@ -70,9 +70,9 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
                     child: SizedBox(height: 600, child: MovementMonitorCard()),
                   ),
                   SizedBox(width: 18),
-                  Expanded(
-                    child: SizedBox(height: 600, child: FootageViewerCard()),
-                  ),
+                  // Expanded(
+                  //   child: SizedBox(height: 600, child: FootageViewerCard()),
+                  // ),
                 ],
               ),
             ],

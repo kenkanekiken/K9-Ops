@@ -41,12 +41,12 @@ class _TabletScaffoldState extends State<TabletScaffold> {
                     child: SizedBox(height: 500, child: MovementMonitorCard()),
                   ),
                   SizedBox(width: 16),
-                  Expanded(
-                    child: SizedBox(
-                      height: 500, // 👈 footage slightly longer
-                      child: FootageViewerCard(),
-                    ),
-                  ),
+                  // Expanded(
+                  //   child: SizedBox(
+                  //     height: 500, // 👈 footage slightly longer
+                  //     child: FootageViewerCard(),
+                  //   ),
+                  // ),
                 ],
               ),
               const SizedBox(height: 16),

@@ -39,8 +39,8 @@ class _MobileScaffoldState extends State<MobileScaffold> {
               SizedBox(height: 14),
 
               // Footage (slightly longer)
-              SizedBox(height: 500, child: FootageViewerCard()),
-              SizedBox(height: 14),
+              // SizedBox(height: 500, child: FootageViewerCard()),
+              // SizedBox(height: 14),
 
               // Comms + Vibration + Recent
               CommsPanel(),
