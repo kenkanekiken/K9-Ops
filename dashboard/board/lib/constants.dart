@@ -9,14 +9,11 @@ import 'package:flutter/foundation.dart';
 import 'dart:async';
 import 'package:flutter/gestures.dart';
 import 'package:mjpeg_stream/mjpeg_stream.dart';
-<<<<<<< HEAD
 import 'dart:async';
 import 'package:http/http.dart' as http;
-=======
 // MQTT
 import 'package:provider/provider.dart';
 import 'mqtt_client/mqtt_provider.dart';
->>>>>>> 543979691a04215def2f26895c2353b805d3635a
 
 final isWeb = kIsWeb;
 
