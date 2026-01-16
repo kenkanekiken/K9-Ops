@@ -9,8 +9,14 @@ import 'package:flutter/foundation.dart';
 import 'dart:async';
 import 'package:flutter/gestures.dart';
 import 'package:mjpeg_stream/mjpeg_stream.dart';
+<<<<<<< HEAD
 import 'dart:async';
 import 'package:http/http.dart' as http;
+=======
+// MQTT
+import 'package:provider/provider.dart';
+import 'mqtt_client/mqtt_provider.dart';
+>>>>>>> 543979691a04215def2f26895c2353b805d3635a
 
 final isWeb = kIsWeb;
 
@@ -901,7 +907,7 @@ class GPSTemperature extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ref = FirebaseDatabase.instance.ref('devices/dog/temperature');
+    final ref = FirebaseDatabase.instance.ref('devices/dog/temperature/c');
 
     return StreamBuilder<DatabaseEvent>(
       stream: ref.onValue,
@@ -997,8 +1003,41 @@ class _LedControlCardState extends State<LedControlCard> {
   int selectedColor = 0;
   double brightness = 0.75;
 
+  bool _dirty = false; // user changed something
+  Map<String, dynamic>? _lastSent; // optional: prevent duplicates
+
+  Map<String, dynamic> _currentPayload() => {
+    "mode": selectedMode,
+    "color": selectedColor,
+    "brightness": (brightness * 255).round(), // 0-255
+  };
+
+  void _markDirty() {
+    setState(() => _dirty = true);
+  }
+
+  void _publishLed(BuildContext context) {
+    final mqtt = context.read<MqttProvider>();
+
+    // 🔒 Step 3: block sending if MQTT is offline
+
+    final payload = _currentPayload();
+
+    if (mapEquals(payload, _lastSent)) return;
+
+    mqtt.sendCommand(target: "Dog", cmd: "LED", value: payload);
+
+    setState(() {
+      _lastSent = payload;
+      _dirty = false; // reset after sending
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    final mqtt = context.watch<MqttProvider>();
+    final canSend = _dirty && mqtt.isConnected;
+
     return GlassCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1040,7 +1079,10 @@ class _LedControlCardState extends State<LedControlCard> {
                   label: "Off",
                   icon: Icons.circle,
                   selected: selectedMode == 0,
-                  onTap: () => setState(() => selectedMode = 0),
+                  onTap: () {
+                    setState(() => selectedMode = 0);
+                    _markDirty();
+                  },
                 ),
               ),
               const SizedBox(width: 10),
@@ -1049,7 +1091,10 @@ class _LedControlCardState extends State<LedControlCard> {
                   label: "Steady",
                   icon: Icons.circle,
                   selected: selectedMode == 1,
-                  onTap: () => setState(() => selectedMode = 1),
+                  onTap: () {
+                    setState(() => selectedMode = 1);
+                    _markDirty();
+                  },
                 ),
               ),
               const SizedBox(width: 10),
@@ -1058,7 +1103,10 @@ class _LedControlCardState extends State<LedControlCard> {
                   label: "Flash",
                   icon: Icons.flash_on,
                   selected: selectedMode == 2,
-                  onTap: () => setState(() => selectedMode = 2),
+                  onTap: () {
+                    setState(() => selectedMode = 2);
+                    _markDirty();
+                  },
                 ),
               ),
               const SizedBox(width: 10),
@@ -1067,7 +1115,10 @@ class _LedControlCardState extends State<LedControlCard> {
                   label: "Pulse",
                   icon: Icons.waves,
                   selected: selectedMode == 3,
-                  onTap: () => setState(() => selectedMode = 3),
+                  onTap: () {
+                    setState(() => selectedMode = 3);
+                    _markDirty();
+                  },
                 ),
               ),
             ],
@@ -1082,31 +1133,46 @@ class _LedControlCardState extends State<LedControlCard> {
               _ColorDot(
                 color: const Color(0xFF2DB7FF),
                 selected: selectedColor == 0,
-                onTap: () => setState(() => selectedColor = 0),
+                onTap: () {
+                  setState(() => selectedColor = 0);
+                  _markDirty();
+                },
               ),
               const SizedBox(width: 10),
               _ColorDot(
                 color: const Color(0xFF2FE57A),
                 selected: selectedColor == 1,
-                onTap: () => setState(() => selectedColor = 1),
+                onTap: () {
+                  setState(() => selectedColor = 1);
+                  _markDirty();
+                },
               ),
               const SizedBox(width: 10),
               _ColorDot(
                 color: const Color(0xFFFF2D6C),
                 selected: selectedColor == 2,
-                onTap: () => setState(() => selectedColor = 2),
+                onTap: () {
+                  setState(() => selectedColor = 2);
+                  _markDirty();
+                },
               ),
               const SizedBox(width: 10),
               _ColorDot(
                 color: const Color(0xFFFFA41B),
                 selected: selectedColor == 3,
-                onTap: () => setState(() => selectedColor = 3),
+                onTap: () {
+                  setState(() => selectedColor = 3);
+                  _markDirty();
+                },
               ),
               const SizedBox(width: 10),
               _ColorDot(
                 color: Colors.white,
                 selected: selectedColor == 4,
-                onTap: () => setState(() => selectedColor = 4),
+                onTap: () {
+                  setState(() => selectedColor = 4);
+                  _markDirty();
+                },
               ),
             ],
           ),
@@ -1117,8 +1183,28 @@ class _LedControlCardState extends State<LedControlCard> {
             style: const TextStyle(color: mutedText),
           ),
           Slider(
-            value: brightness,
-            onChanged: (v) => setState(() => brightness = v),
+            min: 0.0,
+            max: 1.0,
+            value: brightness.clamp(0.0, 1.0),
+            onChanged: (v) {
+              setState(() {
+                brightness = v;
+                _dirty = true;
+              });
+            },
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: canSend ? () => _publishLed(context) : null,
+              icon: const Icon(Icons.check_circle_outline),
+              label: Text(
+                mqtt.isConnected
+                    ? (_dirty ? "Set" : "Set (No changes)")
+                    : "Connecting MQTT...",
+              ),
+            ),
           ),
         ],
       ),
@@ -1433,11 +1519,23 @@ class SpeedLineChartPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    print('Painting with speeds: $speeds, size: $size');
-    List<double> dataToDraw = speeds.isNotEmpty
+    final List<double> dataToDraw = speeds.isNotEmpty
         ? speeds
-        : [0, 5, 10, 8, 12, 6]; // Fallback fake data
+        : <double>[0, 5, 10, 8, 12, 6];
+
     if (dataToDraw.isEmpty) return;
+
+    // ✅ IMPORTANT: if only 1 point, avoid (length - 1) = 0
+    if (dataToDraw.length < 2) {
+      final p = Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.2
+        ..color = accentBlue.withOpacity(0.95);
+
+      final y = size.height * 0.5;
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), p);
+      return;
+    }
 
     final paint = Paint()
       ..style = PaintingStyle.stroke
@@ -1447,45 +1545,41 @@ class SpeedLineChartPainter extends CustomPainter {
     final path = Path();
 
     double maxSpeed = dataToDraw.reduce(math.max);
-    if (maxSpeed == 0) maxSpeed = 1; // Avoid division by zero
+    if (maxSpeed <= 0) maxSpeed = 1;
 
     for (int i = 0; i < dataToDraw.length; i++) {
-      final t = i / (dataToDraw.length - 1).toDouble();
+      final t = i / (dataToDraw.length - 1); // safe now
       final x = t * size.width;
-      final y =
-          size.height -
-          (dataToDraw[i] / maxSpeed) * size.height * 0.8; // Leave some margin
+      final y = size.height - (dataToDraw[i] / maxSpeed) * size.height * 0.8;
 
-      if (i == 0) {
+      if (i == 0)
         path.moveTo(x, y);
-      } else {
+      else
         path.lineTo(x, y);
-      }
     }
 
     canvas.drawPath(path, paint);
 
     // Draw speed labels
-    final textStyle = TextStyle(
+    const textStyle = TextStyle(
       color: Colors.white,
       fontSize: 10,
       fontWeight: FontWeight.bold,
     );
 
     for (int i = 0; i < dataToDraw.length; i++) {
-      final t = i / (dataToDraw.length - 1).toDouble();
+      final t = i / (dataToDraw.length - 1);
       final x = t * size.width;
       final y = size.height - (dataToDraw[i] / maxSpeed) * size.height * 0.8;
 
-      final textSpan = TextSpan(
-        text: dataToDraw[i].toStringAsFixed(1),
-        style: textStyle,
-      );
       final textPainter = TextPainter(
-        text: textSpan,
+        text: TextSpan(
+          text: dataToDraw[i].toStringAsFixed(1),
+          style: textStyle,
+        ),
         textDirection: TextDirection.ltr,
-      );
-      textPainter.layout();
+      )..layout();
+
       textPainter.paint(
         canvas,
         Offset(x - textPainter.width / 2, y - textPainter.height - 5),
@@ -1795,40 +1889,41 @@ class _LegendDot extends StatelessWidget {
 }
 
 /* -------------------- FOOTAGE VIEWER (RIGHT) -------------------- */
-class FootageViewerCard extends StatefulWidget {
-  const FootageViewerCard({super.key});
+// class FootageViewerCard extends StatefulWidget {
+//   const FootageViewerCard({super.key});
 
-  @override
-  _FootageViewerCardState createState() => _FootageViewerCardState();
-}
+//   @override
+//   _FootageViewerCardState createState() => _FootageViewerCardState();
+// }
 
-class _FootageViewerCardState extends State<FootageViewerCard> {
-  // NOTICE: The _streamKey and _refreshStream logic is gone. 
-  // The MjpegStream widget handles the "live" updates automatically.
+// class _FootageViewerCardState extends State<FootageViewerCard> {
+//   // NOTICE: The _streamKey and _refreshStream logic is gone.
+//   // The MjpegStream widget handles the "live" updates automatically.
 
-  @override
-  Widget build(BuildContext context) {
-    return GlassCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          Row(
-            children: [
-              const Icon(Icons.photo_camera_outlined, color: Color(0xFFFF5A5A)),
-              const SizedBox(width: 10),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text("Footage Viewer", style: titleStyle()),
-                  const SizedBox(height: 2),
-                  Text("Live video stream", style: labelStyle()),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
+//   @override
+//   Widget build(BuildContext context) {
+//     return GlassCard(
+//       child: Column(
+//         crossAxisAlignment: CrossAxisAlignment.start,
+//         children: [
+//           // Header
+//           Row(
+//             children: [
+//               const Icon(Icons.photo_camera_outlined, color: Color(0xFFFF5A5A)),
+//               const SizedBox(width: 10),
+//               Column(
+//                 crossAxisAlignment: CrossAxisAlignment.start,
+//                 children: [
+//                   Text("Footage Viewer", style: titleStyle()),
+//                   const SizedBox(height: 2),
+//                   Text("Live video stream", style: labelStyle()),
+//                 ],
+//               ),
+//             ],
+//           ),
+//           const SizedBox(height: 16),
 
+<<<<<<< HEAD
           // Main video preview (live stream)
           Expanded(
             child: Container(
@@ -1856,6 +1951,74 @@ class _FootageViewerCardState extends State<FootageViewerCard> {
     );
   }
 }
+=======
+//           // Main video preview (live stream)
+//           Expanded(
+//             child: Container(
+//               width: double.infinity,
+//               decoration: BoxDecoration(
+//                 color: Colors.black,
+//                 borderRadius: BorderRadius.circular(8),
+//               ),
+//               clipBehavior: Clip.antiAlias,
+//               // NEW IMPROVED STREAMER
+//               child: MJPEGStreamScreen(
+//                 streamUrl: 'http://192.168.1.8/stream',
+//                 timeout: const Duration(seconds: 100),
+//                 showLiveIcon: true,
+//                 width: double.infinity,
+//                 height: double
+//                     .infinity, // Set to infinity to fill the Expanded container
+//                 borderRadius: 8, // Matches your GlassCard aesthetics
+//                 showLogs: true, // Helpful for debugging the connection
+//                 fit: BoxFit.cover,
+//               ),
+//             ),
+//           ),
+
+//           const SizedBox(height: 14),
+
+//           // Recent captures row (Remains the same)
+//           Row(
+//             children: const [
+//               Icon(
+//                 Icons.calendar_month_outlined,
+//                 color: Colors.blueAccent,
+//                 size: 18,
+//               ), // Used accentBlue variable if defined
+//               SizedBox(width: 8),
+//               Text(
+//                 "Recent Captures",
+//                 style: TextStyle(
+//                   color: Colors.white,
+//                   fontWeight: FontWeight.w600,
+//                 ),
+//               ),
+//             ],
+//           ),
+//           const SizedBox(height: 10),
+
+//           SizedBox(
+//             height: 74,
+//             child: ListView(
+//               scrollDirection: Axis.horizontal,
+//               children: const [
+//                 _ThumbTile(selected: true, duration: "2:15"),
+//                 SizedBox(width: 10),
+//                 _ThumbTile(duration: "1:45"),
+//                 SizedBox(width: 10),
+//                 _ThumbTile(duration: "3:20"),
+//                 SizedBox(width: 10),
+//                 _ThumbTile(duration: "1:30"),
+//               ],
+//             ),
+//           ),
+//         ],
+//       ),
+//     );
+//   }
+// }
+>>>>>>> 543979691a04215def2f26895c2353b805d3635a
 
 // class _ThumbTile extends StatelessWidget {
 //   final bool selected;
