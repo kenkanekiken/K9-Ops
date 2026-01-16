@@ -4,6 +4,7 @@
 #include "firebase.h"
 #include <XPowersLib.h>
 #include <WiFi.h>
+#include "mqtt_handler.h"
 #include <Firebase_ESP_Client.h>
 
 #define I2C_SDA 21
@@ -37,8 +38,8 @@ static uint32_t pressedAt = 0;
 // const char* password = "Songbird7108";
 // const char* ssid = "Jun Leis S23+";
 // const char* password = "lmaoooooo";
-const char* ssid = "kenkanekiken";
-const char* password = "12345678";
+const char* ssid = "AirTies4920_4E37";
+const char* password = "t7Nf78N3YH";
 
 void wifiInit(void) {
   WiFi.begin(ssid, password);
@@ -197,10 +198,12 @@ void setup() {
   firebaseInit();
   loraInit();
   powerInit();
+  mqttInit();
   Serial.println("[TRAINER] Ready");
 }
 
 void loop() {
+  mqttLoop();
   // -------- POWER BUTTON (Trainer shutdown) --------
   bool pressed = (digitalRead(POWER_BTN) == LOW);
 
