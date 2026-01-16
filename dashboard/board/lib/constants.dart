@@ -1888,42 +1888,39 @@ class _LegendDot extends StatelessWidget {
   }
 }
 
-/* -------------------- FOOTAGE VIEWER (RIGHT) -------------------- */
-// class FootageViewerCard extends StatefulWidget {
-//   const FootageViewerCard({super.key});
+class FootageViewerCard extends StatefulWidget {
+  const FootageViewerCard({super.key});
 
-//   @override
-//   _FootageViewerCardState createState() => _FootageViewerCardState();
-// }
+  @override
+  _FootageViewerCardState createState() => _FootageViewerCardState();
+}
 
-// class _FootageViewerCardState extends State<FootageViewerCard> {
-//   // NOTICE: The _streamKey and _refreshStream logic is gone.
-//   // The MjpegStream widget handles the "live" updates automatically.
+class _FootageViewerCardState extends State<FootageViewerCard> {
+  // The MJPEGStream widget handles the "live" updates automatically.
+  
+  @override
+  Widget build(BuildContext context) {
+    return GlassCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Row(
+            children: [
+              const Icon(Icons.photo_camera_outlined, color: Color(0xFFFF5A5A)),
+              const SizedBox(width: 10),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text("Footage Viewer", style: titleStyle()),
+                  const SizedBox(height: 2),
+                  Text("Live video stream", style: labelStyle()),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
 
-//   @override
-//   Widget build(BuildContext context) {
-//     return GlassCard(
-//       child: Column(
-//         crossAxisAlignment: CrossAxisAlignment.start,
-//         children: [
-//           // Header
-//           Row(
-//             children: [
-//               const Icon(Icons.photo_camera_outlined, color: Color(0xFFFF5A5A)),
-//               const SizedBox(width: 10),
-//               Column(
-//                 crossAxisAlignment: CrossAxisAlignment.start,
-//                 children: [
-//                   Text("Footage Viewer", style: titleStyle()),
-//                   const SizedBox(height: 2),
-//                   Text("Live video stream", style: labelStyle()),
-//                 ],
-//               ),
-//             ],
-//           ),
-//           const SizedBox(height: 16),
-
-<<<<<<< HEAD
           // Main video preview (live stream)
           Expanded(
             child: Container(
@@ -1933,15 +1930,16 @@ class _LegendDot extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
               ),
               clipBehavior: Clip.antiAlias,
-              // NEW IMPROVED STREAMER
-              child: MJPEGStreamScreen (
-                streamUrl: 'http://10.17.121.228/stream',
+              // MJPEG Streamer connects directly to your ESP32-CAM
+              child: MJPEGStreamScreen(
+                // Ensure this IP matches your ESP32's current IP address
+                streamUrl: 'http://192.168.1.9/stream', 
                 timeout: const Duration(seconds: 5),
                 showLiveIcon: true,
                 width: double.infinity,
-                height: double.infinity,             // Set to infinity to fill the Expanded container
-                borderRadius: 8,                     // Matches your GlassCard aesthetics
-                showLogs: true,                      // Helpful for debugging the connection
+                height: double.infinity,
+                borderRadius: 8,
+                showLogs: true,
                 fit: BoxFit.cover,
               ),
             ),
@@ -1951,32 +1949,6 @@ class _LegendDot extends StatelessWidget {
     );
   }
 }
-=======
-//           // Main video preview (live stream)
-//           Expanded(
-//             child: Container(
-//               width: double.infinity,
-//               decoration: BoxDecoration(
-//                 color: Colors.black,
-//                 borderRadius: BorderRadius.circular(8),
-//               ),
-//               clipBehavior: Clip.antiAlias,
-//               // NEW IMPROVED STREAMER
-//               child: MJPEGStreamScreen(
-//                 streamUrl: 'http://192.168.1.8/stream',
-//                 timeout: const Duration(seconds: 100),
-//                 showLiveIcon: true,
-//                 width: double.infinity,
-//                 height: double
-//                     .infinity, // Set to infinity to fill the Expanded container
-//                 borderRadius: 8, // Matches your GlassCard aesthetics
-//                 showLogs: true, // Helpful for debugging the connection
-//                 fit: BoxFit.cover,
-//               ),
-//             ),
-//           ),
-
-//           const SizedBox(height: 14),
 
 //           // Recent captures row (Remains the same)
 //           Row(
@@ -2018,7 +1990,6 @@ class _LegendDot extends StatelessWidget {
 //     );
 //   }
 // }
->>>>>>> 543979691a04215def2f26895c2353b805d3635a
 
 // class _ThumbTile extends StatelessWidget {
 //   final bool selected;
