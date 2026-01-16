@@ -9,6 +9,8 @@ import 'package:flutter/foundation.dart';
 import 'dart:async';
 import 'package:flutter/gestures.dart';
 import 'package:mjpeg_stream/mjpeg_stream.dart';
+import 'dart:async';
+import 'package:http/http.dart' as http;
 
 final isWeb = kIsWeb;
 
@@ -1838,8 +1840,8 @@ class _FootageViewerCardState extends State<FootageViewerCard> {
               clipBehavior: Clip.antiAlias,
               // NEW IMPROVED STREAMER
               child: MJPEGStreamScreen (
-                streamUrl: 'http://192.168.1.8/stream',
-                timeout: const Duration(seconds: 100),
+                streamUrl: 'http://10.17.121.228/stream',
+                timeout: const Duration(seconds: 5),
                 showLiveIcon: true,
                 width: double.infinity,
                 height: double.infinity,             // Set to infinity to fill the Expanded container
@@ -1849,116 +1851,82 @@ class _FootageViewerCardState extends State<FootageViewerCard> {
               ),
             ),
           ),
-
-          const SizedBox(height: 14),
-
-          // Recent captures row (Remains the same)
-          Row(
-            children: const [
-              Icon(Icons.calendar_month_outlined, color: Colors.blueAccent, size: 18), // Used accentBlue variable if defined
-              SizedBox(width: 8),
-              Text(
-                "Recent Captures",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-
-          SizedBox(
-            height: 74,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              children: const [
-                _ThumbTile(selected: true, duration: "2:15"),
-                SizedBox(width: 10),
-                _ThumbTile(duration: "1:45"),
-                SizedBox(width: 10),
-                _ThumbTile(duration: "3:20"),
-                SizedBox(width: 10),
-                _ThumbTile(duration: "1:30"),
-              ],
-            ),
-          ),
         ],
       ),
     );
   }
 }
 
-class _ThumbTile extends StatelessWidget {
-  final bool selected;
-  final String duration;
+// class _ThumbTile extends StatelessWidget {
+//   final bool selected;
+//   final String duration;
 
-  const _ThumbTile({this.selected = false, required this.duration});
+//   const _ThumbTile({this.selected = false, required this.duration});
 
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(14),
-        onTap: () => debugPrint("Open clip $duration"),
-        child: Container(
-          width: 120,
-          decoration: BoxDecoration(
-            color: softBg,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: selected ? const Color(0xFF1B4DFF) : cardBorder,
-              width: selected ? 2 : 1,
-            ),
-          ),
-          child: Stack(
-            children: [
-              // thumbnail placeholder
-              Positioned.fill(
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          const Color(0xFF2A3448),
-                          Colors.black.withOpacity(0.35),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              // duration badge
-              Positioned(
-                right: 8,
-                bottom: 8,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.45),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: Colors.white.withOpacity(0.10)),
-                  ),
-                  child: Text(
-                    duration,
-                    style: const TextStyle(color: Colors.white, fontSize: 11),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
+//   @override
+//   Widget build(BuildContext context) {
+//     return Material(
+//       color: Colors.transparent,
+//       child: InkWell(
+//         borderRadius: BorderRadius.circular(14),
+//         onTap: () => debugPrint("Open clip $duration"),
+//         child: Container(
+//           width: 120,
+//           decoration: BoxDecoration(
+//             color: softBg,
+//             borderRadius: BorderRadius.circular(14),
+//             border: Border.all(
+//               color: selected ? const Color(0xFF1B4DFF) : cardBorder,
+//               width: selected ? 2 : 1,
+//             ),
+//           ),
+//           child: Stack(
+//             children: [
+//               // thumbnail placeholder
+//               Positioned.fill(
+//                 child: ClipRRect(
+//                   borderRadius: BorderRadius.circular(12),
+//                   child: DecoratedBox(
+//                     decoration: BoxDecoration(
+//                       gradient: LinearGradient(
+//                         begin: Alignment.topLeft,
+//                         end: Alignment.bottomRight,
+//                         colors: [
+//                           const Color(0xFF2A3448),
+//                           Colors.black.withOpacity(0.35),
+//                         ],
+//                       ),
+//                     ),
+//                   ),
+//                 ),
+//               ),
+//               // duration badge
+//               Positioned(
+//                 right: 8,
+//                 bottom: 8,
+//                 child: Container(
+//                   padding: const EdgeInsets.symmetric(
+//                     horizontal: 8,
+//                     vertical: 4,
+//                   ),
+//                   decoration: BoxDecoration(
+//                     color: Colors.black.withOpacity(0.45),
+//                     borderRadius: BorderRadius.circular(10),
+//                     border: Border.all(color: Colors.white.withOpacity(0.10)),
+//                   ),
+//                   child: Text(
+//                     duration,
+//                     style: const TextStyle(color: Colors.white, fontSize: 11),
+//                   ),
+//                 ),
+//               ),
+//             ],
+//           ),
+//         ),
+//       ),
+//     );
+//   }
+// }
 
 /* -------------------- GRID PAINTER -------------------- */
 class GridPainter extends CustomPainter {
