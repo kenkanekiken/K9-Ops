@@ -14,8 +14,8 @@
 // const char* password = "Songbird7108";
 // const char* ssid = "Jun Leis S23+";
 // const char* password = "lmaoooooo";
-const char* ssid = "kenkanekiken";
-const char* password = "12345678";
+const char* ssid = "AirTies4920_4E37";
+const char* password = "t7Nf78N3YH";
 
 void wifiInit(void) {
   WiFi.begin(ssid, password);
@@ -55,10 +55,13 @@ void setup() {
 
 void loop() {
   // 1️⃣ Keep modules updated (always)
+
   gpsUpdate();
   batteryUpdate();
   dhtUpdate();
   mpuUpdate();
+  loraHandleIncoming();
+  
 
   // 2️⃣ CHECK FOR SOFTWARE POWER-OFF (LONG PRESS YOU CONTROL)
   if (powerButtonLongPressed()) {

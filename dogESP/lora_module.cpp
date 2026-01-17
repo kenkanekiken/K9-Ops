@@ -64,3 +64,44 @@ void loraSendSnapshot(
   Serial.print("[LoRa TX] ");
   Serial.println(msg);
 }
+
+bool loraReceiveLine(String &outLine, int &outRssi, float &outSnr) {
+  int packetSize = LoRa.parsePacket();
+  if (!packetSize) return false;
+  String s;
+  while (LoRa.available()) s += (char)LoRa.read();
+  outLine = s;
+  outRssi = LoRa.packetRssi();
+  outSnr  = LoRa.packetSnr();
+  return true;
+}
+
+void loraHandleIncoming() {
+  String line;
+  int rssi = 0;
+  float snr = 0;
+  if (!loraReceiveLine(line, rssi, snr)) return;
+
+  if (line.startsWith("L,")) {
+
+    int mode, color, brightness;
+    // This is an LED command
+    // Parse LED command
+    if (sscanf(line.c_str(), "L,%d,%d,%d", &mode, &color, &brightness) == 3) {
+      Serial.printf("[LoRa RX] LED cmd: mode=%d color=%d brightness=%d\n",
+                    mode, color, brightness);
+
+    
+    }
+
+    else {
+      Serial.println("[LoRa RX] Invalid LED command");
+    }
+  }
+
+  else {
+        Serial.println("[LoRa RX] Received unknown packet: " + line);
+    }
+
+
+}

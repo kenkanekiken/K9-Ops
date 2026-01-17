@@ -3,6 +3,7 @@
 #include <ArduinoJson.h>
 #include <LoRa.h>  // Required to send LoRa packets
 #include "mqtt_handler.h"
+#include "lora_module.h"
 
 // Configuration
 const char* mqtt_server = "test.mosquitto.org";
@@ -27,9 +28,10 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
         // BRIDGE LOGIC: If target is "Dog", blast it over LoRa
         if (target != nullptr && strcmp(target, "Dog") == 0) {
             Serial.println("[LoRa] Forwarding command to Dog...");
-            LoRa.beginPacket();
-            LoRa.print(message); 
-            LoRa.endPacket();
+            int mode = doc["value"]["mode"];
+            int color = doc["value"]["color"];
+            int brightness = doc["value"]["brightness"];
+            loraSendLedCommand(mode, color, brightness);
         }
     }
 }

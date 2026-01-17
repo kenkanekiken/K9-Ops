@@ -48,3 +48,10 @@ bool loraReceiveLine(String &outLine, int &outRssi, float &outSnr) {
   outSnr  = LoRa.packetSnr();
   return true;
 }
+
+void loraSendLedCommand(int mode, int color, int brightness) {
+    LoRa.beginPacket();
+    // Use a very short "header" like 'L' so the Dog knows it's an LED command
+    LoRa.printf("L,%d,%d,%d", mode, color, brightness); 
+    LoRa.endPacket();
+}

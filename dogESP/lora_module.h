@@ -15,3 +15,6 @@ void loraSendSnapshot(
   int motion, int state,
   long steps, float speed, float distance
 );
+
+bool loraReceiveLine(String &outLine, int &outRssi, float &outSnr);
+void loraHandleIncoming(); 

@@ -4,3 +4,4 @@
 
 void loraInit();
 bool loraReceiveLine(String &outLine, int &outRssi, float &outSnr);
+void loraSendLedCommand(int mode, int color, int brightness);

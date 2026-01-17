@@ -1930,7 +1930,7 @@ class _FootageViewerCardState extends State<FootageViewerCard> {
               // MJPEG Streamer connects directly to your ESP32-CAM
               child: MJPEGStreamScreen(
                 // Ensure this IP matches your ESP32's current IP address
-                streamUrl: 'http://192.168.1.9/stream', 
+                streamUrl: 'http://192.168.1.3/stream', 
                 timeout: const Duration(seconds: 5),
                 showLiveIcon: true,
                 width: double.infinity,
