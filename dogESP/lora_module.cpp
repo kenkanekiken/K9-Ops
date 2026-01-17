@@ -2,6 +2,7 @@
 #include "lora_module.h"
 #include <SPI.h>
 #include <LoRa.h>
+#include "led_function.h"
 
 // T-Beam SX1276 typical pins
 #define LORA_SCK   5
@@ -90,6 +91,8 @@ void loraHandleIncoming() {
     if (sscanf(line.c_str(), "L,%d,%d,%d", &mode, &color, &brightness) == 3) {
       Serial.printf("[LoRa RX] LED cmd: mode=%d color=%d brightness=%d\n",
                     mode, color, brightness);
+
+      isBlinking = true;
 
     
     }

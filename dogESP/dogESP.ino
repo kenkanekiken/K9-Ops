@@ -50,7 +50,8 @@ void setup() {
   loraInit();   
   // No Wifi init here   
   pinMode(POWER_BTN, INPUT_PULLUP);
-  Serial.println("[DOG] Boot OK");     
+  Serial.println("[DOG] Boot OK");
+  pinMode(13, OUTPUT);     
 }
 
 void loop() {
@@ -61,7 +62,7 @@ void loop() {
   dhtUpdate();
   mpuUpdate();
   loraHandleIncoming();
-  
+  blink_led(13);
 
   // 2️⃣ CHECK FOR SOFTWARE POWER-OFF (LONG PRESS YOU CONTROL)
   if (powerButtonLongPressed()) {
