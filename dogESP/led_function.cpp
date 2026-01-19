@@ -9,6 +9,7 @@ Adafruit_NeoPixel strip(NUM_PIXELS, PIN, NEO_GRB + NEO_KHZ800);
 int g_mode =0;
 int g_colorIdx =0;
 int g_brightness =150;
+bool needsReset = false;
 
 const int flashSpeed = 500; // Speed for Mode 2
 
@@ -32,9 +33,21 @@ void setLedProperties(int mode, int color, int brightness) {
   g_mode = mode;
   g_colorIdx = color;
   g_brightness = brightness;
+
+  needsReset = true;
 }
 
 void runLedAnimations() {
+
+  if (needsReset) {
+    strip.clear();
+    strip.show();
+    
+    // We don't use delay(), we just "skip" this one frame
+    // to let the voltage stabilize
+    needsReset = false; 
+    return; // Exit the function and come back next loop
+  }
   uint32_t activeColor = colors[g_colorIdx];
   strip.setBrightness(g_brightness);
 
