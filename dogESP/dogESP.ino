@@ -48,6 +48,7 @@ void setup() {
   mpuInit();        
   dhtInit();          
   loraInit();   
+  ledInit();
   // No Wifi init here   
   pinMode(POWER_BTN, INPUT_PULLUP);
   Serial.println("[DOG] Boot OK");
@@ -62,6 +63,7 @@ void loop() {
   dhtUpdate();
   mpuUpdate();
   loraHandleIncoming();
+  runLedAnimations();
   blink_led(13);
 
   // 2️⃣ CHECK FOR SOFTWARE POWER-OFF (LONG PRESS YOU CONTROL)

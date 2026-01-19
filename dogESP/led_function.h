@@ -1,6 +1,8 @@
 #pragma once
 #include <stdint.h>
 
-extern bool isBlinking;
+void ledInit();
+void setLedProperties(int mode, int color, int brightness);
+void runLedAnimations();
 
-void blink_led(int pin);
+

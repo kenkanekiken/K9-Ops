@@ -92,7 +92,7 @@ void loraHandleIncoming() {
       Serial.printf("[LoRa RX] LED cmd: mode=%d color=%d brightness=%d\n",
                     mode, color, brightness);
 
-      isBlinking = true;
+      setLedProperties(mode, color, brightness);
 
     
     }
