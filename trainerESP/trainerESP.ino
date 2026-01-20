@@ -38,8 +38,8 @@ static uint32_t pressedAt = 0;
 // const char* password = "Songbird7108";
 // const char* ssid = "Jun Leis S23+";
 // const char* password = "lmaoooooo";
-const char* ssid = "AirTies4920_4E37";
-const char* password = "t7Nf78N3YH";
+const char* ssid = "kenkanekiken";
+const char* password = "12345678";
 
 void wifiInit(void) {
   WiFi.begin(ssid, password);

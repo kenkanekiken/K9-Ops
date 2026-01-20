@@ -14,8 +14,8 @@
 // const char* password = "Songbird7108";
 // const char* ssid = "Jun Leis S23+";
 // const char* password = "lmaoooooo";
-const char* ssid = "AirTies4920_4E37";
-const char* password = "t7Nf78N3YH";
+const char* ssid = "kenkanekiken";
+const char* password = "12345678";
 
 void wifiInit(void) {
   WiFi.begin(ssid, password);
@@ -48,7 +48,7 @@ void setup() {
   mpuInit();        
   dhtInit();          
   loraInit();   
-  ledInit();
+  LedInit();
   // No Wifi init here   
   pinMode(POWER_BTN, INPUT_PULLUP);
   Serial.println("[DOG] Boot OK");
@@ -64,7 +64,6 @@ void loop() {
   mpuUpdate();
   loraHandleIncoming();
   runLedAnimations();
-  blink_led(13);
 
   // 2️⃣ CHECK FOR SOFTWARE POWER-OFF (LONG PRESS YOU CONTROL)
   if (powerButtonLongPressed()) {
