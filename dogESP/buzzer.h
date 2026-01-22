@@ -1,6 +1,13 @@
-#pragma once
-#include <stdint.h>
+#ifndef BUZZER_H
+#define BUZZER_H
 
-void buzzerInit(void);
-void buzzerOn(void);
-void buzzerOff(void);
+#include <Arduino.h>
+
+// CHANGED TO PIN 25 FOR T-BEAM
+#define BUZZER_PIN 25 
+
+void initBuzzer();
+void buzzerOn();
+void buzzerOff();
+
+#endif

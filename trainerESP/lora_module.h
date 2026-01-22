@@ -1,7 +1,13 @@
-#pragma once
-#include <Arduino.h>
-#include <stdint.h>
+#ifndef LORA_MODULE_H
+#define LORA_MODULE_H
 
-void loraInit();
+#include <Arduino.h>
+
+void loraInit(void);
 bool loraReceiveLine(String &outLine, int &outRssi, float &outSnr);
 void loraSendLedCommand(int mode, int color, int brightness);
+
+// NEW: Buzzer function definition
+void loraSendBuzzerCommand(int state); 
+
+#endif

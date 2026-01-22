@@ -1,52 +1,51 @@
 #include <WiFi.h>
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
-#include <LoRa.h>  // Required to send LoRa packets
 #include "mqtt_handler.h"
 #include "lora_module.h"
 
-// Configuration
-const char* mqtt_server = "test.mosquitto.org";
-const char* cmd_topic = "k9ops/trainer/cmd";
+const char* mqtt_server = "test.mosquitto.org"; // Public testing server
+const char* cmd_topic   = "k9ops/trainer/cmd";
 
 WiFiClient espClient;
 PubSubClient client(espClient);
 
-// This function runs when an MQTT message arrives from Flutter
 void mqttCallback(char* topic, byte* payload, unsigned int length) {
-    String message;
-    for (int i = 0; i < length; i++) { message += (char)payload[i]; }
+    String msg;
+    for (int i=0; i<length; i++) msg += (char)payload[i];
     
-    Serial.print("[MQTT] Received: ");
-    Serial.println(message);
+    Serial.print("[MQTT RX]: "); Serial.println(msg);
 
-    StaticJsonDocument<256> doc;
-    DeserializationError error = deserializeJson(doc, message);
+    StaticJsonDocument<512> doc;
+    DeserializationError error = deserializeJson(doc, msg);
 
     if (!error) {
         const char* target = doc["target"];
-        // BRIDGE LOGIC: If target is "Dog", blast it over LoRa
-        if (target != nullptr && strcmp(target, "Dog") == 0) {
-            Serial.println("[LoRa] Forwarding command to Dog...");
-            int mode = doc["value"]["mode"];
-            int color = doc["value"]["color"];
-            int brightness = doc["value"]["brightness"];
-            loraSendLedCommand(mode, color, brightness);
+        if (target && strcmp(target, "Dog") == 0) {
+            
+            // CHECK FOR BUZZER COMMAND
+            if (doc.containsKey("command") && strcmp(doc["command"], "buzzer") == 0) {
+                int val = doc["value"]; // 1 or 0
+                loraSendBuzzerCommand(val);
+            }
+            // CHECK FOR LED COMMAND
+            else if (doc.containsKey("value") && doc["value"].is<JsonObject>()) {
+                 int m = doc["value"]["mode"];
+                 int c = doc["value"]["color"];
+                 int b = doc["value"]["brightness"];
+                 loraSendLedCommand(m, c, b);
+            }
         }
     }
 }
 
 void mqttReconnect() {
     while (!client.connected()) {
-        Serial.print("[MQTT] Attempting connection...");
-        // Unique ID for the trainer
-        String clientId = "K9Trainer-" + String(WiFi.macAddress());
-        if (client.connect(clientId.c_str())) {
-            Serial.println("connected");
+        String id = "Trainer-" + String(WiFi.macAddress());
+        if (client.connect(id.c_str())) {
             client.subscribe(cmd_topic);
+            Serial.println("[MQTT] Connected & Subscribed");
         } else {
-            Serial.print("failed, rc=");
-            Serial.print(client.state());
             delay(5000);
         }
     }
@@ -58,8 +57,6 @@ void mqttInit() {
 }
 
 void mqttLoop() {
-    if (!client.connected()) {
-        mqttReconnect();
-    }
+    if (!client.connected()) mqttReconnect();
     client.loop();
 }

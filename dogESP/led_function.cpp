@@ -1,76 +1,76 @@
-#include <Adafruit_NeoPixel.h>
-#include <Arduino.h>
 #include "led_function.h"
+#include <Arduino.h>
+#include <Adafruit_NeoPixel.h> // Ensure you have this library installed!
 
-#define PIN 4
-#define NUM_PIXELS 60
-Adafruit_NeoPixel strip(NUM_PIXELS, PIN, NEO_GRB + NEO_KHZ800);
+// ==========================
+// CONFIGURATION
+// ==========================
+#define LED_PIN      4   // Change if your LED is on a different pin
+#define NUM_LEDS     1   // Number of LEDs on your board
 
-int g_mode =0;
-int g_colorIdx =0;
-int g_brightness =150;
-bool needsReset = false;
+Adafruit_NeoPixel strip(NUM_LEDS, LED_PIN, NEO_GRB + NEO_KHZ800);
 
-const int flashSpeed = 500; // Speed for Mode 2
-
-// Color Palette (Hex)
-uint32_t colors[] = {
-  0x00ABFF, // 0: Blue
-  0x14FF24, // 1: Green
-  0xFF0000, // 2: Red
-  0xFFCD00, // 3: Yellow
-  0xFFFFFF  // 4: White
-};
+// Global Variables
+int currentMode = 0;       // 0=Off, 1=Solid, 2=Blink
+int currentColor = 0;      // 0=Red, 1=Green, 2=Blue, 3=White
+int currentBrightness = 255; 
+unsigned long lastUpdate = 0;
+bool blinkState = false;
 
 void LedInit() {
-  strip.begin();
-  strip.setBrightness(g_brightness);
-  strip.show();
+    strip.begin();
+    strip.show(); // Initialize all pixels to 'off'
+    strip.setBrightness(255);
 }
 
 void setLedProperties(int mode, int color, int brightness) {
-  // This is the only function needed in loop
-  g_mode = mode;
-  g_colorIdx = color;
-  g_brightness = brightness;
+    currentMode = mode;
+    currentColor = color;
+    currentBrightness = brightness;
+    strip.setBrightness(brightness);
+    
+    // Immediate feedback
+    if (mode == 0) {
+        strip.clear();
+        strip.show();
+    } else if (mode == 1) {
+        // Solid Color Update Immediately
+        runLedAnimations(); 
+    }
+}
 
-  needsReset = true;
+uint32_t getColorHelper(int c) {
+    switch(c) {
+        case 0: return strip.Color(255, 0, 0);   // Red
+        case 1: return strip.Color(0, 255, 0);   // Green
+        case 2: return strip.Color(0, 0, 255);   // Blue
+        case 3: return strip.Color(255, 255, 255); // White
+        default: return strip.Color(0, 0, 0);
+    }
 }
 
 void runLedAnimations() {
-
-  if (needsReset) {
-    strip.clear();
-    strip.show();
-    
-    // We don't use delay(), we just "skip" this one frame
-    // to let the voltage stabilize
-    needsReset = false; 
-    return; // Exit the function and come back next loop
-  }
-  uint32_t activeColor = colors[g_colorIdx];
-  strip.setBrightness(g_brightness);
-
-  if (g_mode == 0) {
-    strip.clear();
-  } 
-  else if (g_mode == 1) {
-    for (int i = 0; i < NUM_PIXELS; i++) strip.setPixelColor(i, activeColor);
-  } 
-  else if (g_mode == 2) {
-    bool phase = (millis() / flashSpeed) % 2; 
-    for (int i = 0; i < NUM_PIXELS; i++) {
-      strip.setPixelColor(i, ((i / 4) % 2 == phase) ? activeColor : 0);
+    if (currentMode == 0) {
+        strip.clear();
+        strip.show();
+        return;
     }
-  } 
-  else if (g_mode == 3) {
-    for (int i = 0; i < NUM_PIXELS; i++) {
-      float wave = (sin((millis() / 200.0) + (i * 0.5)) + 1) / 2;
-      byte r = (activeColor >> 16) & 0xFF;
-      byte g = (activeColor >> 8) & 0xFF;
-      byte b = activeColor & 0xFF;
-      strip.setPixelColor(i, strip.Color(r * wave, g * wave, b * wave));
+
+    uint32_t color = getColorHelper(currentColor);
+
+    // MODE 1: SOLID
+    if (currentMode == 1) {
+        strip.fill(color);
+        strip.show();
     }
-  }
-  strip.show();
-}
+    // MODE 2: BLINK (1 second interval)
+    else if (currentMode == 2) {
+        if (millis() - lastUpdate > 1000) {
+            lastUpdate = millis();
+            blinkState = !blinkState;
+            if (blinkState) strip.fill(color);
+            else strip.clear();
+            strip.show();
+        }
+    }
+} 
