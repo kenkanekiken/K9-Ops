@@ -345,7 +345,7 @@ class TopStatsRow extends StatelessWidget {
             value: "Low",
           ),
           TemperatureStatPill(),
-          StatPill(icon: Icons.show_chart, title: "Activity", value: "active"),
+          StatPill(icon: Icons.settings, title: "Mode", value: "Playing"),
           BatteryStatPill(),
         ];
 
@@ -1968,7 +1968,7 @@ class FootageViewerCard extends StatefulWidget {
 
 class _FootageViewerCardState extends State<FootageViewerCard> {
   // The MJPEGStream widget handles the "live" updates automatically.
-  
+
   @override
   Widget build(BuildContext context) {
     return GlassCard(
@@ -2004,7 +2004,12 @@ class _FootageViewerCardState extends State<FootageViewerCard> {
               // MJPEG Streamer connects directly to your ESP32-CAM
               child: MJPEGStreamScreen(
                 // Ensure this IP matches your ESP32's current IP address
+<<<<<<< HEAD
                 streamUrl: 'http://10.196.49.228/stream', 
+=======
+                streamUrl: 'http://172.20.10.4/stream',
+                // streamUrl: 'http://10.196.49.228/stream',
+>>>>>>> d8c4a4b (added)
                 timeout: const Duration(seconds: 5),
                 showLiveIcon: true,
                 width: double.infinity,
