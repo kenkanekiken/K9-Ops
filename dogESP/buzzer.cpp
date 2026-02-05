@@ -32,14 +32,14 @@ void initBuzzer() {
 // ✅ This is the only behavior you needed
 void playBuzzerPattern(int pattern) {
   switch (pattern) {
-    // 1️⃣ Single tap
+    // Single tap
     case 1:
       buzzerOn();
       delay(120);
       buzzerOff();
       break;
 
-    // 2️⃣ Double tap
+    // Double tap
     case 2:
       for (int i = 0; i < 2; i++) {
         buzzerOn();
@@ -49,10 +49,57 @@ void playBuzzerPattern(int pattern) {
       }
       break;
 
-    // 3️⃣ Continuous (3 seconds)
+    // Continuous (3 seconds)
     case 3:
       buzzerOn();
       delay(3000);
+      buzzerOff();
+      break;
+
+   // 🎾 Playing 
+    case 4:
+      buzzerOn();
+      delay(80);
+      buzzerOff();
+      delay(150);
+      buzzerOn();
+      delay(120);
+      buzzerOff();
+      break;
+
+  // 🎯 Training 
+    case 5:
+      for (int i = 0; i < 3; i++) {
+        buzzerOn();
+        delay(120);
+        buzzerOff();
+        delay(250);
+      }
+      break;
+
+  // 🟣 Tracing 
+    case 6:
+      buzzerOn();
+      delay(220);
+      buzzerOff();
+      delay(100);
+      buzzerOn();
+      delay(150);
+      buzzerOff();
+      delay(80);
+      buzzerOn();
+      delay(90);
+      buzzerOff();
+      break;
+
+  // 🦺 Deployed 
+    case 7:
+      buzzerOn();
+      delay(400);
+      buzzerOff();
+      delay(150);
+      buzzerOn();
+      delay(120);
       buzzerOff();
       break;
 
