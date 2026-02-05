@@ -1388,34 +1388,73 @@ class _CommandTile extends StatelessWidget {
   }
 }
 
-class VibrationPanel extends StatelessWidget {
+class VibrationPanel extends StatefulWidget {
   const VibrationPanel({super.key});
+
+  @override
+  State<VibrationPanel> createState() => _VibrationPanelState();
+}
+
+class _VibrationPanelState extends State<VibrationPanel> {
+  // Track which index is currently "pulsing"
+  String? _pulsingIndex;
+
+  void _sendVibration(BuildContext context, String index, String label) {
+    final mqtt = context.read<MqttProvider>();
+    if (!mqtt.isConnected) return;
+
+    // 1. Show the "Active" color
+    setState(() => _pulsingIndex = index);
+
+    // 2. Fire the MQTT command
+    mqtt.sendCommand(
+      target: "Dog",
+      cmd: "Vibration",
+      value: {"mode": index},
+    );
+
+    // 3. Revert the color after 500 milliseconds
+    Future.delayed(const Duration(milliseconds: 600), () {
+      if (mounted) {
+        setState(() => _pulsingIndex = null);
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return GlassCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: const [
-          Row(
+        children: [
+          const Row(
             children: [
               Icon(Icons.vibration, color: Color(0xFFB26BFF)),
               SizedBox(width: 8),
-              Text(
-                "Vibration",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+              Text("Vibration", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
             ],
           ),
-          SizedBox(height: 12),
-          _VibeTile(index: "1", label: "Single Tap"),
-          SizedBox(height: 10),
-          _VibeTile(index: "2", label: "Double Tap"),
-          SizedBox(height: 10),
-          _VibeTile(index: "∞", label: "Continuous"),
+          const SizedBox(height: 12),
+          _VibeTile(
+            index: "1",
+            label: "Single Tap",
+            isPulsing: _pulsingIndex == "1",
+            onTap: () => _sendVibration(context, "1", "Single Tap"),
+          ),
+          const SizedBox(height: 10),
+          _VibeTile(
+            index: "2",
+            label: "Double Tap",
+            isPulsing: _pulsingIndex == "2",
+            onTap: () => _sendVibration(context, "2", "Double Tap"),
+          ),
+          const SizedBox(height: 10),
+          _VibeTile(
+            index: "∞",
+            label: "Continuous",
+            isPulsing: _pulsingIndex == "∞",
+            onTap: () => _sendVibration(context, "3", "Continuous"),
+          ),
         ],
       ),
     );
@@ -1425,45 +1464,80 @@ class VibrationPanel extends StatelessWidget {
 class _VibeTile extends StatelessWidget {
   final String index;
   final String label;
-  const _VibeTile({required this.index, required this.label});
+  final bool isPulsing;
+  final VoidCallback onTap;
+
+  const _VibeTile({
+    required this.index,
+    required this.label,
+    required this.isPulsing,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(14),
-        onTap: () => debugPrint("Vibration tapped: $label"),
-        child: Container(
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(14),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          child: AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
           height: 54,
           decoration: BoxDecoration(
-            color: softBg,
+            color: isPulsing 
+                ? Colors.white        // Active background
+                : softBg,             // Normal background
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: cardBorder),
+            border: Border.all(
+              color: isPulsing 
+                  ? const Color(0xFFB26BFF) 
+                  : cardBorder,
+            ),
           ),
           child: Row(
             children: [
               const SizedBox(width: 12),
-              Container(
+
+              // Number badge
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
                 height: 28,
                 width: 28,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF18263D),
+                  color: isPulsing
+                      ? const Color(0xFFB26BFF)
+                      : const Color(0xFF18263D),
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: cardBorder),
                 ),
                 alignment: Alignment.center,
-                child: Text(index, style: const TextStyle(color: Colors.white)),
+                child: Text(
+                  index,
+                  style: const TextStyle(color: Colors.white, fontSize: 12),
+                ),
               ),
+
               const SizedBox(width: 12),
-              Text(label, style: const TextStyle(color: Colors.white)),
+
+              // Label
+              AnimatedDefaultTextStyle(
+                duration: const Duration(milliseconds: 150),
+                style: TextStyle(
+                  color: isPulsing ? Colors.black : Colors.white,
+                  fontWeight: isPulsing ? FontWeight.bold : FontWeight.normal,
+                ),
+                child: Text(label),
+              ),
             ],
           ),
+        ),
         ),
       ),
     );
   }
 }
+
 
 class RecentCommandsPanel extends StatelessWidget {
   const RecentCommandsPanel({super.key});
@@ -1930,7 +2004,7 @@ class _FootageViewerCardState extends State<FootageViewerCard> {
               // MJPEG Streamer connects directly to your ESP32-CAM
               child: MJPEGStreamScreen(
                 // Ensure this IP matches your ESP32's current IP address
-                streamUrl: 'http://192.168.1.3/stream', 
+                streamUrl: 'http://10.196.49.228/stream', 
                 timeout: const Duration(seconds: 5),
                 showLiveIcon: true,
                 width: double.infinity,

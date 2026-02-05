@@ -121,9 +121,11 @@ void handleStream() {
   server.setContentLength(CONTENT_LENGTH_UNKNOWN);
   
   // ADDED THE CORS HEADER BELOW
-  server.sendContent("HTTP/1.1 200 OK\r\n"
-                     "Access-Control-Allow-Origin: *\r\n" // <--- CRITICAL LINE
-                     "Content-Type: multipart/x-mixed-replace; boundary=" + String(boundary) + "\r\n\r\n");
+  // Change this line in your handleStream function:
+server.sendContent("HTTP/1.1 200 OK\r\n"
+                   "Access-Control-Allow-Origin: *\r\n"
+                   "Content-Type: multipart/x-mixed-replace; boundary=" + String(boundary) + "\r\n"
+                   "Connection: keep-alive\r\n\r\n"); // Added keep-alive
 
   while (client.connected()) {
     camera_fb_t* fb = esp_camera_fb_get();
