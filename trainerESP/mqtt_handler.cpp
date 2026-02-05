@@ -23,16 +23,36 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
     StaticJsonDocument<256> doc;
     DeserializationError error = deserializeJson(doc, message);
 
-    if (!error) {
-        const char* target = doc["target"];
-        // BRIDGE LOGIC: If target is "Dog", blast it over LoRa
-        if (target != nullptr && strcmp(target, "Dog") == 0) {
-            Serial.println("[LoRa] Forwarding command to Dog...");
-            int mode = doc["value"]["mode"];
-            int color = doc["value"]["color"];
-            int brightness = doc["value"]["brightness"];
-            loraSendLedCommand(mode, color, brightness);
-        }
+    if (error) {
+        Serial.print("JSON Parse failed");
+        Serial.println(error.f_str());
+        return;
+    }
+
+    const char* target = doc["target"];
+    const char* cmd = doc["cmd"]; // Get the command type ("LED" or "VIBE")
+
+
+    if (target != nullptr && strcmp(target, "Dog") == 0) {
+
+            if (cmd != nullptr && strcmp(cmd, "LED") == 0) {
+                Serial.println("[LoRa] Forwarding LED command to Dog...");
+                int mode = doc["value"]["mode"];
+                int color = doc["value"]["color"];
+                int brightness = doc["value"]["brightness"];
+
+                loraSendCommand('L' ,mode, color, brightness);
+            }
+
+            else if (cmd != nullptr && strcmp(cmd, "Vibration") == 0) {
+            Serial.println("[LoRa] Forwarding Vibration command to Dog...");
+
+                int vibMode = doc["value"]["mode"]; 
+            
+                // Call your LoRa vibration function
+                loraSendCommand('V' ,vibMode, 0, 0);    
+
+            }
     }
 }
 

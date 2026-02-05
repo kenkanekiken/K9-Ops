@@ -1397,9 +1397,9 @@ class VibrationPanel extends StatefulWidget {
 
 class _VibrationPanelState extends State<VibrationPanel> {
   // Track which index is currently "pulsing"
-  String? _pulsingIndex;
+  int? _pulsingIndex;
 
-  void _sendVibration(BuildContext context, String index, String label) {
+  void _sendVibration(BuildContext context, int index, String label) {
     final mqtt = context.read<MqttProvider>();
     if (!mqtt.isConnected) return;
 
@@ -1438,22 +1438,22 @@ class _VibrationPanelState extends State<VibrationPanel> {
           _VibeTile(
             index: "1",
             label: "Single Tap",
-            isPulsing: _pulsingIndex == "1",
-            onTap: () => _sendVibration(context, "1", "Single Tap"),
+            isPulsing: _pulsingIndex == 1,
+            onTap: () => _sendVibration(context, 1, "Single Tap"),
           ),
           const SizedBox(height: 10),
           _VibeTile(
             index: "2",
             label: "Double Tap",
-            isPulsing: _pulsingIndex == "2",
-            onTap: () => _sendVibration(context, "2", "Double Tap"),
+            isPulsing: _pulsingIndex == 2,
+            onTap: () => _sendVibration(context, 2, "Double Tap"),
           ),
           const SizedBox(height: 10),
           _VibeTile(
             index: "∞",
             label: "Continuous",
-            isPulsing: _pulsingIndex == "∞",
-            onTap: () => _sendVibration(context, "3", "Continuous"),
+            isPulsing: _pulsingIndex == 3,
+            onTap: () => _sendVibration(context, 3, "Continuous"),
           ),
         ],
       ),

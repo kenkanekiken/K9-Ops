@@ -49,9 +49,11 @@ bool loraReceiveLine(String &outLine, int &outRssi, float &outSnr) {
   return true;
 }
 
-void loraSendLedCommand(int mode, int color, int brightness) {
+void loraSendCommand(char func, int v1, int v2, int v3) {
     LoRa.beginPacket();
     // Use a very short "header" like 'L' so the Dog knows it's an LED command
-    LoRa.printf("L,%d,%d,%d", mode, color, brightness); 
+
+    LoRa.printf("%c,%d,%d,%d", func, v1, v2, v3); 
     LoRa.endPacket();
+    Serial.printf("[LoRa] Sent: %c,%d,%d,%d\n", func, v1, v2, v3);
 }

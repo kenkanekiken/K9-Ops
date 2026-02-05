@@ -49,6 +49,7 @@ void setup() {
   dhtInit();          
   loraInit();   
   LedInit();
+  buzzerInit();
   // No Wifi init here   
   pinMode(POWER_BTN, INPUT_PULLUP);
   Serial.println("[DOG] Boot OK");

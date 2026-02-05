@@ -3,6 +3,7 @@
 #include <SPI.h>
 #include <LoRa.h>
 #include "led_function.h"
+#include "buzzer.h"
 
 // T-Beam SX1276 typical pins
 #define LORA_SCK   5
@@ -83,28 +84,23 @@ void loraHandleIncoming() {
   float snr = 0;
   if (!loraReceiveLine(line, rssi, snr)) return;
 
-  if (line.startsWith("L,")) {
+  Serial.print("[LoRa RX] "); 
+  Serial.println(line);
 
-    int mode, color, brightness;
-    // This is an LED command
-    // Parse LED command
-    if (sscanf(line.c_str(), "L,%d,%d,%d", &mode, &color, &brightness) == 3) {
-      Serial.printf("[LoRa RX] LED cmd: mode=%d color=%d brightness=%d\n",
-                    mode, color, brightness);
+  int val1, val2, val3;
 
-      setLedProperties(mode, color, brightness);
-
-    
-    }
-
-    else {
-      Serial.println("[LoRa RX] Invalid LED command");
-    }
+  // 1. Handle Vibration Command (V,1 / V,2 / V,3)
+  if (line.startsWith("V,")) {
+    if (sscanf(line.c_str(), "V,%d,%d,%d", &val1, &val2, &val3) >= 1) {
+          Serial.printf("Triggering Vibration Pattern: %d\n", val1);
+          playBuzzerPattern(val1);
+      }
   }
-
-  else {
-        Serial.println("[LoRa RX] Received unknown packet: " + line);
-    }
-
-
+  // 2. Handle LED Command (L,mode,color,brightness)
+  else if (line.startsWith("L,")) {
+    if (sscanf(line.c_str(), "L,%d,%d,%d", &val1, &val2, &val3) == 3) {
+          Serial.printf("LED Command: Mode=%d, Color=%d, Bright=%d\n", val1, val2, val3);
+          setLedProperties(val1, val2, val3);
+      }
+  }
 }

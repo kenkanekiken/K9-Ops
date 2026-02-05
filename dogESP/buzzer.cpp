@@ -1,20 +1,63 @@
 #include <Arduino.h>
 #include "buzzer.h"
 
-// ===== PWM BUZZER CONFIG =====
-#define BUZZER_PIN 14     // change to your buzzer GPIO
-#define BUZZER_FREQ 2000  // Hz (tone pitch)
-#define BUZZER_RES 8      // resolution (8-bit: 0–255)
+// IMPORTANT:
+// - <Arduino.h> provides pinMode/digitalWrite/delay
+// - "buzzer.h" provides buzzerOn/buzzerOff prototypes
+
+// If your buzzer pin is defined elsewhere, keep that.
+// If not, set it here to match your hardware.
+#ifndef BUZZER_PIN
+#define BUZZER_PIN 14
+#endif
 
 void buzzerInit(void) {
-  // New API (ESP32 core 3.x): attaches PWM to this PIN, channel auto-selected
-  ledcAttach(BUZZER_PIN, BUZZER_FREQ, BUZZER_RES);
-  ledcWrite(BUZZER_PIN, 0); // OFF
+  pinMode(BUZZER_PIN, OUTPUT);
+  digitalWrite(BUZZER_PIN, LOW);
 }
 
-void buzzerOn(void) {  // 50% duty by default
-  ledcWrite(BUZZER_PIN, 128);
+void buzzerOn(void) {
+  digitalWrite(BUZZER_PIN, HIGH);
 }
+
 void buzzerOff(void) {
-  ledcWrite(BUZZER_PIN, 0);
+  digitalWrite(BUZZER_PIN, LOW);
+}
+
+// Keep compatibility if you already call initBuzzer() somewhere
+void initBuzzer() {
+  buzzerInit();
+}
+
+// ✅ This is the only behavior you needed
+void playBuzzerPattern(int pattern) {
+  switch (pattern) {
+    // 1️⃣ Single tap
+    case 1:
+      buzzerOn();
+      delay(120);
+      buzzerOff();
+      break;
+
+    // 2️⃣ Double tap
+    case 2:
+      for (int i = 0; i < 2; i++) {
+        buzzerOn();
+        delay(120);
+        buzzerOff();
+        delay(120);
+      }
+      break;
+
+    // 3️⃣ Continuous (3 seconds)
+    case 3:
+      buzzerOn();
+      delay(3000);
+      buzzerOff();
+      break;
+
+    default:
+      buzzerOff();
+      break;
+  }
 }
