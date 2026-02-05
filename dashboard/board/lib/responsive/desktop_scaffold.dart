@@ -9,6 +9,8 @@ class DesktopScaffold extends StatefulWidget {
 }
 
 class _DesktopScaffoldState extends State<DesktopScaffold> {
+  String currentMode = "Training"; // ✅ store mode here (parent)
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -30,15 +32,15 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
                   Expanded(
                     flex: 3,
                     child: Column(
-                      children: const [
-                        TopStatsRow(),
-                        SizedBox(height: 18),
+                      children: [
+                        TopStatsRow(currentMode: currentMode),
+                        const SizedBox(height: 18),
 
                         // Give GPS a fixed height so it doesn't fight layout
-                        SizedBox(height: 420, child: GpsCard()),
-                        SizedBox(height: 18),
+                        const SizedBox(height: 420, child: GpsCard()),
+                        const SizedBox(height: 18),
 
-                        LedControlCard(),
+                        const LedControlCard(),
                       ],
                     ),
                   ),
@@ -49,12 +51,20 @@ class _DesktopScaffoldState extends State<DesktopScaffold> {
                   Expanded(
                     flex: 2,
                     child: Column(
-                      children: const [
-                        CommsPanel(),
-                        SizedBox(height: 18),
-                        VibrationPanel(),
-                        SizedBox(height: 18),
-                        RecentCommandsPanel(),
+                      children: [
+                        // CommsPanel(),
+                        ModePanel(
+                          initialMode: currentMode,
+                          onModeChanged: (mode) {
+                            setState(
+                              () => currentMode = mode,
+                            ); // ✅ update parent
+                          },
+                        ),
+                        const SizedBox(height: 18),
+                        const VibrationPanel(),
+                        const SizedBox(height: 18),
+                        const RecentCommandsPanel(),
                       ],
                     ),
                   ),

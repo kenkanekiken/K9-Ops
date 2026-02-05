@@ -9,6 +9,8 @@ class MobileScaffold extends StatefulWidget {
 }
 
 class _MobileScaffoldState extends State<MobileScaffold> {
+  String currentMode = "Training"; // ✅ store mode here (parent)
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -17,33 +19,39 @@ class _MobileScaffoldState extends State<MobileScaffold> {
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(14),
           child: Column(
-            children: const [
+            children: [
               DashboardHeader(
                 title: "Dog's Dashboard",
                 subtitle: "Live monitoring & control",
               ),
-              SizedBox(height: 14),
-              TopStatsRow(),
-              SizedBox(height: 14),
+              const SizedBox(height: 14),
+              TopStatsRow(currentMode: currentMode),
+              const SizedBox(height: 14),
 
               // GPS
-              SizedBox(height: 500, child: GpsCard()),
-              SizedBox(height: 14),
+              const SizedBox(height: 500, child: GpsCard()),
+              const SizedBox(height: 14),
 
               // LED
-              LedControlCard(),
-              SizedBox(height: 14),
+              const LedControlCard(),
+              const SizedBox(height: 14),
 
               // Movement (stacked)
-              SizedBox(height: 500, child: MovementMonitorCard()),
-              SizedBox(height: 14),
+              const SizedBox(height: 500, child: MovementMonitorCard()),
+              const SizedBox(height: 14),
 
               // Footage (slightly longer)
-              SizedBox(height: 500, child: FootageViewerCard()),
-              SizedBox(height: 14),
+              const SizedBox(height: 500, child: FootageViewerCard()),
+              const SizedBox(height: 14),
 
               // Comms + Vibration + Recent
-              CommsPanel(),
+              // CommsPanel(),
+              ModePanel(
+                initialMode: currentMode,
+                onModeChanged: (mode) {
+                  setState(() => currentMode = mode); // ✅ update parent
+                },
+              ),
               SizedBox(height: 14),
               VibrationPanel(),
               SizedBox(height: 14),
