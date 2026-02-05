@@ -1326,14 +1326,27 @@ class _ModePanelState extends State<ModePanel> {
         return 1; // green
       case "Training":
         return 0; // blue
-      case "Searching":
+      case "Tracing":
         return 2; // red
-      case "Hunting":
-        return 1; // green
-      case "Deployed": // if you use deployed instead of hunting
-        return 1; // green (change if you want)
+      case "Deployed":
+        return 3; // yellow
       default:
         return 4; // white fallback
+    }
+  }
+
+  int _buzzForDogMode(String mode) {
+    switch (mode) {
+      case "Playing":
+        return 4;
+      case "Training":
+        return 5;
+      case "Tracing":
+        return 6;
+      case "Deployed":
+        return 7;
+      default:
+        return 5; //
     }
   }
 
@@ -1364,8 +1377,16 @@ class _ModePanelState extends State<ModePanel> {
 
     // 🔍 LOG 2: about to publish
     print("PUBLISH LED -> target=Dog cmd=LED payload=$ledPayload");
+    print(
+      "PUBLISH BUZZER -> target=Dog cmd=Vibration payload=$_buzzForDogMode(mode)",
+    );
 
     mqtt.sendCommand(target: "Dog", cmd: "LED", value: ledPayload);
+    mqtt.sendCommand(
+      target: "Dog",
+      cmd: "Vibration",
+      value: {"mode": _buzzForDogMode(mode)},
+    );
 
     // 🔍 LOG 3: publish call done
     print("PUBLISH CALLED ✅");
@@ -1426,15 +1447,15 @@ class _ModePanelState extends State<ModePanel> {
               ),
               _ModeTile(
                 emoji: "🔎",
-                label: "Searching",
-                selected: currentMode == "Searching",
-                onTap: () => _setMode(context, "Searching"),
+                label: "Tracing",
+                selected: currentMode == "Tracing",
+                onTap: () => _setMode(context, "Tracing"),
               ),
               _ModeTile(
-                emoji: "🏹",
-                label: "Hunting",
-                selected: currentMode == "Hunting",
-                onTap: () => _setMode(context, "Hunting"),
+                emoji: "🦺",
+                label: "Deployed",
+                selected: currentMode == "Deployed",
+                onTap: () => _setMode(context, "Deployed"),
               ),
             ],
           ),
@@ -1543,23 +1564,23 @@ class _VibrationPanelState extends State<VibrationPanel> {
           const SizedBox(height: 12),
           _VibeTile(
             index: "1",
-            label: "Single Tap",
+            label: "Stay",
             isPulsing: _pulsingIndex == 1,
-            onTap: () => _sendVibration(context, 1, "Single Tap"),
+            onTap: () => _sendVibration(context, 1, "Stay"),
           ),
           const SizedBox(height: 10),
           _VibeTile(
             index: "2",
-            label: "Double Tap",
+            label: "Alert",
             isPulsing: _pulsingIndex == 2,
-            onTap: () => _sendVibration(context, 2, "Double Tap"),
+            onTap: () => _sendVibration(context, 2, "Alert"),
           ),
           const SizedBox(height: 10),
           _VibeTile(
             index: "∞",
-            label: "Continuous",
+            label: "Reall",
             isPulsing: _pulsingIndex == 3,
-            onTap: () => _sendVibration(context, 3, "Continuous"),
+            onTap: () => _sendVibration(context, 3, "Recall"),
           ),
         ],
       ),
@@ -2108,9 +2129,9 @@ class _FootageViewerCardState extends State<FootageViewerCard> {
               // MJPEG Streamer connects directly to your ESP32-CAM
               child: MJPEGStreamScreen(
                 // Ensure this IP matches your ESP32's current IP address
-                streamUrl: 'http://172.20.10.4/stream',
-                // streamUrl: 'http://10.196.49.228/stream',
-                timeout: const Duration(seconds: 5),
+                // streamUrl: 'http://172.20.10.4/stream',
+                streamUrl: 'http://10.196.49.228/stream',
+                // timeout: const Duration(seconds: 5),
                 showLiveIcon: true,
                 width: double.infinity,
                 height: double.infinity,
