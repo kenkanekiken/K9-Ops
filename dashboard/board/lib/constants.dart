@@ -330,7 +330,9 @@ class BatteryStatPill extends StatelessWidget {
 }
 
 class TopStatsRow extends StatelessWidget {
-  const TopStatsRow({super.key});
+  final String currentMode;
+
+  const TopStatsRow({super.key, required this.currentMode});
 
   @override
   Widget build(BuildContext context) {
@@ -338,15 +340,15 @@ class TopStatsRow extends StatelessWidget {
       builder: (context, c) {
         final isMobile = c.maxWidth < 700;
 
-        final items = const [
-          StatPill(
+        final items = [
+          const StatPill(
             icon: Icons.favorite_border,
             title: "Heat Risk",
             value: "Low",
           ),
-          TemperatureStatPill(),
-          StatPill(icon: Icons.settings, title: "Mode", value: "Playing"),
-          BatteryStatPill(),
+          const TemperatureStatPill(),
+          StatPill(icon: Icons.settings, title: "Mode", value: currentMode),
+          const BatteryStatPill(),
         ];
 
         if (isMobile) {
@@ -1295,8 +1297,100 @@ class _ColorDot extends StatelessWidget {
 
 /* -------------------- RIGHT PANELS (CLICKABLE COMMANDS) -------------------- */
 
-class CommsPanel extends StatelessWidget {
-  const CommsPanel({super.key});
+class ModePanel extends StatefulWidget {
+  final String initialMode;
+  final ValueChanged<String> onModeChanged;
+
+  const ModePanel({
+    super.key,
+    required this.onModeChanged,
+    this.initialMode = "Training",
+  });
+
+  @override
+  State<ModePanel> createState() => _ModePanelState();
+}
+
+class _ModePanelState extends State<ModePanel> {
+  late String currentMode;
+
+  @override
+  void initState() {
+    super.initState();
+    currentMode = widget.initialMode; // sync with parent at start
+  }
+
+  int _colorForDogMode(String mode) {
+    switch (mode) {
+      case "Playing":
+        return 1; // green
+      case "Training":
+        return 0; // blue
+      case "Tracing":
+        return 2; // red
+      case "Deployed":
+        return 3; // yellow
+      default:
+        return 4; // white fallback
+    }
+  }
+
+  int _buzzForDogMode(String mode) {
+    switch (mode) {
+      case "Playing":
+        return 4;
+      case "Training":
+        return 5;
+      case "Tracing":
+        return 6;
+      case "Deployed":
+        return 7;
+      default:
+        return 5; //
+    }
+  }
+
+  void _setMode(BuildContext context, String mode) {
+    if (mode == currentMode) return;
+
+    final mqtt = context.read<MqttProvider>();
+
+    // 🔍 LOG 1: connection check
+    print("MODE TAP -> $mode");
+    print("MQTT connected? ${mqtt.isConnected}");
+
+    if (!mqtt.isConnected) {
+      print("❌ MQTT NOT CONNECTED -> abort send");
+      return;
+    }
+
+    setState(() {
+      currentMode = mode;
+    });
+    widget.onModeChanged(mode);
+
+    final ledPayload = {
+      "mode": 1, // Steady
+      "color": _colorForDogMode(mode),
+      "brightness": 190,
+    };
+
+    // 🔍 LOG 2: about to publish
+    print("PUBLISH LED -> target=Dog cmd=LED payload=$ledPayload");
+    print(
+      "PUBLISH BUZZER -> target=Dog cmd=Vibration payload=$_buzzForDogMode(mode)",
+    );
+
+    mqtt.sendCommand(target: "Dog", cmd: "LED", value: ledPayload);
+    mqtt.sendCommand(
+      target: "Dog",
+      cmd: "Vibration",
+      value: {"mode": _buzzForDogMode(mode)},
+    );
+
+    // 🔍 LOG 3: publish call done
+    print("PUBLISH CALLED ✅");
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1306,23 +1400,22 @@ class CommsPanel extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.wifi_tethering, color: Color(0xFFB26BFF)),
+              const Icon(Icons.settings, color: Color(0xFFB26BFF)),
               const SizedBox(width: 8),
-              Text("Communication", style: titleStyle()),
+              Text("Dog Mode", style: titleStyle()),
               const SizedBox(width: 6),
-              const Text("📡"),
             ],
           ),
           const SizedBox(height: 4),
-          Text("Send commands & signals", style: labelStyle()),
+          Text("Set the dog’s current mode", style: labelStyle()),
           const SizedBox(height: 14),
 
           Row(
             children: const [
-              Icon(Icons.volume_up_outlined, color: accentBlue),
+              Icon(Icons.tune, color: accentBlue),
               SizedBox(width: 8),
               Text(
-                "Sound Commands",
+                "Mode Setting",
                 style: TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.w600,
@@ -1339,13 +1432,31 @@ class CommsPanel extends StatelessWidget {
             crossAxisSpacing: 10,
             physics: const NeverScrollableScrollPhysics(),
             childAspectRatio: 2.2,
-            children: const [
-              _CommandTile(emoji: "👋", label: "Come"),
-              _CommandTile(emoji: "✋", label: "Stay"),
-              _CommandTile(emoji: "⬅️", label: "Left"),
-              _CommandTile(emoji: "➡️", label: "Right"),
-              _CommandTile(emoji: "🪑", label: "Sit"),
-              _CommandTile(emoji: "⚠️", label: "Alert"),
+            children: [
+              _ModeTile(
+                emoji: "🎾",
+                label: "Playing",
+                selected: currentMode == "Playing",
+                onTap: () => _setMode(context, "Playing"),
+              ),
+              _ModeTile(
+                emoji: "🎯",
+                label: "Training",
+                selected: currentMode == "Training",
+                onTap: () => _setMode(context, "Training"),
+              ),
+              _ModeTile(
+                emoji: "🔎",
+                label: "Tracing",
+                selected: currentMode == "Tracing",
+                onTap: () => _setMode(context, "Tracing"),
+              ),
+              _ModeTile(
+                emoji: "🦺",
+                label: "Deployed",
+                selected: currentMode == "Deployed",
+                onTap: () => _setMode(context, "Deployed"),
+              ),
             ],
           ),
         ],
@@ -1354,34 +1465,48 @@ class CommsPanel extends StatelessWidget {
   }
 }
 
-class _CommandTile extends StatelessWidget {
+class _ModeTile extends StatelessWidget {
   final String emoji;
   final String label;
-  const _CommandTile({required this.emoji, required this.label});
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _ModeTile({
+    required this.emoji,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(14),
-        onTap: () => debugPrint("Command tapped: $label"),
-        child: Container(
-          decoration: BoxDecoration(
-            color: softBg,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: cardBorder),
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: selected ? accentBlue : Colors.white24,
+            width: selected ? 2 : 1,
           ),
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(emoji, style: const TextStyle(fontSize: 18)),
-                const SizedBox(height: 4),
-                Text(label, style: const TextStyle(color: Colors.white)),
-              ],
+          color: Colors.white.withOpacity(selected ? 0.10 : 0.05),
+        ),
+        child: Row(
+          children: [
+            Text(emoji, style: const TextStyle(fontSize: 18)),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+                ),
+              ),
             ),
-          ),
+          ],
         ),
       ),
     );
@@ -1407,11 +1532,7 @@ class _VibrationPanelState extends State<VibrationPanel> {
     setState(() => _pulsingIndex = index);
 
     // 2. Fire the MQTT command
-    mqtt.sendCommand(
-      target: "Dog",
-      cmd: "Vibration",
-      value: {"mode": index},
-    );
+    mqtt.sendCommand(target: "Dog", cmd: "Vibration", value: {"mode": index});
 
     // 3. Revert the color after 500 milliseconds
     Future.delayed(const Duration(milliseconds: 600), () {
@@ -1431,29 +1552,35 @@ class _VibrationPanelState extends State<VibrationPanel> {
             children: [
               Icon(Icons.vibration, color: Color(0xFFB26BFF)),
               SizedBox(width: 8),
-              Text("Vibration", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+              Text(
+                "Vibration",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 12),
           _VibeTile(
             index: "1",
-            label: "Single Tap",
+            label: "Stay",
             isPulsing: _pulsingIndex == 1,
-            onTap: () => _sendVibration(context, 1, "Single Tap"),
+            onTap: () => _sendVibration(context, 1, "Stay"),
           ),
           const SizedBox(height: 10),
           _VibeTile(
             index: "2",
-            label: "Double Tap",
+            label: "Alert",
             isPulsing: _pulsingIndex == 2,
-            onTap: () => _sendVibration(context, 2, "Double Tap"),
+            onTap: () => _sendVibration(context, 2, "Alert"),
           ),
           const SizedBox(height: 10),
           _VibeTile(
             index: "∞",
-            label: "Continuous",
+            label: "Reall",
             isPulsing: _pulsingIndex == 3,
-            onTap: () => _sendVibration(context, 3, "Continuous"),
+            onTap: () => _sendVibration(context, 3, "Recall"),
           ),
         ],
       ),
@@ -1483,61 +1610,59 @@ class _VibeTile extends StatelessWidget {
         child: InkWell(
           onTap: onTap,
           child: AnimatedContainer(
-          duration: const Duration(milliseconds: 250),
-          height: 54,
-          decoration: BoxDecoration(
-            color: isPulsing 
-                ? Colors.white        // Active background
-                : softBg,             // Normal background
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: isPulsing 
-                  ? const Color(0xFFB26BFF) 
-                  : cardBorder,
+            duration: const Duration(milliseconds: 250),
+            height: 54,
+            decoration: BoxDecoration(
+              color: isPulsing
+                  ? Colors
+                        .white // Active background
+                  : softBg, // Normal background
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: isPulsing ? const Color(0xFFB26BFF) : cardBorder,
+              ),
+            ),
+            child: Row(
+              children: [
+                const SizedBox(width: 12),
+
+                // Number badge
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  height: 28,
+                  width: 28,
+                  decoration: BoxDecoration(
+                    color: isPulsing
+                        ? const Color(0xFFB26BFF)
+                        : const Color(0xFF18263D),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    index,
+                    style: const TextStyle(color: Colors.white, fontSize: 12),
+                  ),
+                ),
+
+                const SizedBox(width: 12),
+
+                // Label
+                AnimatedDefaultTextStyle(
+                  duration: const Duration(milliseconds: 150),
+                  style: TextStyle(
+                    color: isPulsing ? Colors.black : Colors.white,
+                    fontWeight: isPulsing ? FontWeight.bold : FontWeight.normal,
+                  ),
+                  child: Text(label),
+                ),
+              ],
             ),
           ),
-          child: Row(
-            children: [
-              const SizedBox(width: 12),
-
-              // Number badge
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                height: 28,
-                width: 28,
-                decoration: BoxDecoration(
-                  color: isPulsing
-                      ? const Color(0xFFB26BFF)
-                      : const Color(0xFF18263D),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  index,
-                  style: const TextStyle(color: Colors.white, fontSize: 12),
-                ),
-              ),
-
-              const SizedBox(width: 12),
-
-              // Label
-              AnimatedDefaultTextStyle(
-                duration: const Duration(milliseconds: 150),
-                style: TextStyle(
-                  color: isPulsing ? Colors.black : Colors.white,
-                  fontWeight: isPulsing ? FontWeight.bold : FontWeight.normal,
-                ),
-                child: Text(label),
-              ),
-            ],
-          ),
-        ),
         ),
       ),
     );
   }
 }
-
 
 class RecentCommandsPanel extends StatelessWidget {
   const RecentCommandsPanel({super.key});
@@ -2021,118 +2146,6 @@ class _FootageViewerCardState extends State<FootageViewerCard> {
     );
   }
 }
-
-//           // Recent captures row (Remains the same)
-//           Row(
-//             children: const [
-//               Icon(
-//                 Icons.calendar_month_outlined,
-//                 color: Colors.blueAccent,
-//                 size: 18,
-//               ), // Used accentBlue variable if defined
-//               SizedBox(width: 8),
-//               Text(
-//                 "Recent Captures",
-//                 style: TextStyle(
-//                   color: Colors.white,
-//                   fontWeight: FontWeight.w600,
-//                 ),
-//               ),
-//             ],
-//           ),
-//           const SizedBox(height: 10),
-
-//           SizedBox(
-//             height: 74,
-//             child: ListView(
-//               scrollDirection: Axis.horizontal,
-//               children: const [
-//                 _ThumbTile(selected: true, duration: "2:15"),
-//                 SizedBox(width: 10),
-//                 _ThumbTile(duration: "1:45"),
-//                 SizedBox(width: 10),
-//                 _ThumbTile(duration: "3:20"),
-//                 SizedBox(width: 10),
-//                 _ThumbTile(duration: "1:30"),
-//               ],
-//             ),
-//           ),
-//         ],
-//       ),
-//     );
-//   }
-// }
-
-// class _ThumbTile extends StatelessWidget {
-//   final bool selected;
-//   final String duration;
-
-//   const _ThumbTile({this.selected = false, required this.duration});
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Material(
-//       color: Colors.transparent,
-//       child: InkWell(
-//         borderRadius: BorderRadius.circular(14),
-//         onTap: () => debugPrint("Open clip $duration"),
-//         child: Container(
-//           width: 120,
-//           decoration: BoxDecoration(
-//             color: softBg,
-//             borderRadius: BorderRadius.circular(14),
-//             border: Border.all(
-//               color: selected ? const Color(0xFF1B4DFF) : cardBorder,
-//               width: selected ? 2 : 1,
-//             ),
-//           ),
-//           child: Stack(
-//             children: [
-//               // thumbnail placeholder
-//               Positioned.fill(
-//                 child: ClipRRect(
-//                   borderRadius: BorderRadius.circular(12),
-//                   child: DecoratedBox(
-//                     decoration: BoxDecoration(
-//                       gradient: LinearGradient(
-//                         begin: Alignment.topLeft,
-//                         end: Alignment.bottomRight,
-//                         colors: [
-//                           const Color(0xFF2A3448),
-//                           Colors.black.withOpacity(0.35),
-//                         ],
-//                       ),
-//                     ),
-//                   ),
-//                 ),
-//               ),
-//               // duration badge
-//               Positioned(
-//                 right: 8,
-//                 bottom: 8,
-//                 child: Container(
-//                   padding: const EdgeInsets.symmetric(
-//                     horizontal: 8,
-//                     vertical: 4,
-//                   ),
-//                   decoration: BoxDecoration(
-//                     color: Colors.black.withOpacity(0.45),
-//                     borderRadius: BorderRadius.circular(10),
-//                     border: Border.all(color: Colors.white.withOpacity(0.10)),
-//                   ),
-//                   child: Text(
-//                     duration,
-//                     style: const TextStyle(color: Colors.white, fontSize: 11),
-//                   ),
-//                 ),
-//               ),
-//             ],
-//           ),
-//         ),
-//       ),
-//     );
-//   }
-// }
 
 /* -------------------- GRID PAINTER -------------------- */
 class GridPainter extends CustomPainter {

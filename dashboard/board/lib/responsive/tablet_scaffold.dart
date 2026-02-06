@@ -9,6 +9,8 @@ class TabletScaffold extends StatefulWidget {
 }
 
 class _TabletScaffoldState extends State<TabletScaffold> {
+  String currentMode = "Training"; // ✅ store mode here (parent)
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -23,7 +25,7 @@ class _TabletScaffoldState extends State<TabletScaffold> {
                 subtitle: "Live monitoring & control",
               ),
               const SizedBox(height: 16),
-              const TopStatsRow(),
+              TopStatsRow(currentMode: currentMode),
               const SizedBox(height: 16),
 
               // GPS (fixed height so it stays nice)
@@ -52,7 +54,13 @@ class _TabletScaffoldState extends State<TabletScaffold> {
               const SizedBox(height: 16),
 
               // Right-side panels become stacked on tablet
-              const CommsPanel(),
+              // const CommsPanel(),
+              ModePanel(
+                initialMode: currentMode,
+                onModeChanged: (mode) {
+                  setState(() => currentMode = mode); // ✅ update parent
+                },
+              ),
               const SizedBox(height: 16),
               const VibrationPanel(),
               const SizedBox(height: 16),
