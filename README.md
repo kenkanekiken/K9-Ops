@@ -1,9 +1,10 @@
-# 🐕 K9-Ops – Smart Canine Operations Vest
+# 🐕 K9-Ops – Smart K9 Operations Vest
 
 K9-Ops is an **IoT-enabled smart vest for working and search-and-rescue dogs**, designed to improve safety, visibility, and situational awareness during operations in **low-connectivity or no-cellular environments**.
 
 The system integrates **embedded hardware, wireless communication, and sensor monitoring** to provide handlers with real-time insights into the dog’s location, activity, and operational status.
 
+Video of Prototype : https://vt.tiktok.com/ZSmhLSRcN/
 ---
 
 ## 🚨 Problem Statement
@@ -32,7 +33,7 @@ K9-Ops addresses these challenges using **low-power, long-range IoT technologies
 
 **Core Features**
 - 📍 GPS location tracking
-- 📡 LoRa-based long-range communication
+- 📡 LoRa-based long-range communication up to 2km+
 - 💡 LED lighting for visibility and status indication
 - 🌡️ Environmental sensing (temperature, humidity, etc.)
 - 🔋 Battery-powered and portable design
@@ -91,9 +92,3 @@ This project demonstrates:
 - Sensor integration and data handling
 - Hardware-software co-design
 - Real-world problem solving for mission-critical systems
-
----
-
-## 📄 License
-
-This project is open-source and intended for **educational and non-commercial use** unless stated otherwise.
