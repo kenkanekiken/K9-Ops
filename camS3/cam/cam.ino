@@ -5,8 +5,12 @@
 // =====================
 // YOUR WIFI
 // =====================
-const char* WIFI_SSID = "Jun Leis S23+";
-const char* WIFI_PASS = "lmaoooooo";
+// const char* WIFI_SSID = "Jun Leis S23+";
+// const char* WIFI_PASS = "lmaoooooo";
+const char* WIFI_SSID = "kenkanekiken";
+const char* WIFI_PASS = "12345678";
+// const char* WIFI_SSID = "K&K";
+// const char* WIFI_PASS = "Songbird7108";
 
 // =====================
 // YOUR CAMERA PIN MAP

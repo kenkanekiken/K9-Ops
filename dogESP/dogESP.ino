@@ -14,20 +14,20 @@
 // const char* password = "Songbird7108";
 // const char* ssid = "Jun Leis S23+";
 // const char* password = "lmaoooooo";
-const char* ssid = "kenkanekiken";
-const char* password = "12345678";
+// const char* ssid = "kenkanekiken";
+// const char* password = "12345678";
 
-void wifiInit(void) {
-  WiFi.begin(ssid, password);
-  Serial.print("WiFi connecting");
-  if (WiFi.status() != WL_CONNECTED) {
-    delay(400);
-    Serial.print("Wifi not connected");
-  }
-  Serial.println("\nWiFi connected");
-  Serial.print("IP: ");
-  Serial.println(WiFi.localIP());
-}
+// void wifiInit(void) {
+//   WiFi.begin(ssid, password);
+//   Serial.print("WiFi connecting");
+//   if (WiFi.status() != WL_CONNECTED) {
+//     delay(400);
+//     Serial.print("Wifi not connected");
+//   }
+//   Serial.println("\nWiFi connected");
+//   Serial.print("IP: ");
+//   Serial.println(WiFi.localIP());
+// }
 
 // Long-press detector
 bool powerButtonLongPressed() {
