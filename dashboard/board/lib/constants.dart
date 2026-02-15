@@ -1578,7 +1578,7 @@ class _VibrationPanelState extends State<VibrationPanel> {
           const SizedBox(height: 10),
           _VibeTile(
             index: "∞",
-            label: "Reall",
+            label: "Recall",
             isPulsing: _pulsingIndex == 3,
             onTap: () => _sendVibration(context, 3, "Recall"),
           ),
@@ -2128,10 +2128,9 @@ class _FootageViewerCardState extends State<FootageViewerCard> {
               clipBehavior: Clip.antiAlias,
               // MJPEG Streamer connects directly to your ESP32-CAM
               child: MJPEGStreamScreen(
-                // Ensure this IP matches your ESP32's current IP address
-                // streamUrl: 'http://172.20.10.4/stream',
-                streamUrl: 'http://10.196.49.228/stream',
-                // timeout: const Duration(seconds: 5),
+                // Ensure this IP matches ESP32's current IP address
+                streamUrl: 'http://172.20.10.4/stream',
+                timeout: const Duration(seconds: 5),
                 showLiveIcon: true,
                 width: double.infinity,
                 height: double.infinity,
